@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { EmployeeResult, PerformanceLevel, PotentialLevel } from '../types';
+import { EmployeeResult, PerformanceLevel, PotentialLevel, User } from '../types';
 import { GET_BOX } from '../constants';
 import { generateDevelopmentPlan } from '../services/geminiService';
+import { deleteAssessment } from '../services/storageService';
 import { RefreshCw, Sparkles, X, ChevronRight, LayoutGrid, List, UserPlus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -11,13 +12,15 @@ interface Props {
   onRestart: () => void; // Used as refresh or restart
   onAddMore?: () => void; // Optional: button to add more employees
   readOnly?: boolean; // If true, disables "Generate Advice" (Admin View)
+  adminUser?: User; // Admin for operations like delete assessment
 }
 
-export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, readOnly = false }) => {
+export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, readOnly = false, adminUser }) => {
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResult | null>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(false);
   const [advice, setAdvice] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (window.innerWidth < 768) {
@@ -46,6 +49,18 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
     const result = await generateDevelopmentPlan(selectedEmployee, box);
     setAdvice(result);
     setLoadingAdvice(false);
+  };
+
+  const handleDeleteAssessment = async () => {
+    if (!selectedEmployee || !selectedEmployee.assessmentId || !adminUser) return;
+    setDeleting(true);
+    try {
+      await deleteAssessment(adminUser, selectedEmployee.assessmentId);
+      setSelectedEmployee(null);
+      onRestart();
+    } finally {
+      setDeleting(false);
+    }
   };
 
   // --- Renderers ---
@@ -193,6 +208,8 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
                     onGetAdvice={handleGetAdvice}
                     onClose={() => setSelectedEmployee(null)}
                     readOnly={readOnly}
+                    onDeleteAssessment={handleDeleteAssessment}
+                    deleting={deleting}
                  />
              ) : (
                 <div className="text-center text-gray-400 py-20 flex flex-col items-center">
@@ -224,6 +241,8 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
                         onGetAdvice={handleGetAdvice}
                         onClose={() => setSelectedEmployee(null)}
                         readOnly={readOnly}
+                        onDeleteAssessment={handleDeleteAssessment}
+                        deleting={deleting}
                      />
                   </div>
               </div>
@@ -240,7 +259,9 @@ const EmployeeDetailContent: React.FC<{
     onGetAdvice: () => void;
     onClose: () => void;
     readOnly?: boolean;
-}> = ({ employee, advice, loading, onGetAdvice, readOnly }) => {
+    onDeleteAssessment?: () => void;
+    deleting?: boolean;
+}> = ({ employee, advice, loading, onGetAdvice, readOnly, onDeleteAssessment, deleting }) => {
     const box = GET_BOX(employee.performance!, employee.potential!);
 
     return (
@@ -293,6 +314,17 @@ const EmployeeDetailContent: React.FC<{
                     )}
                 </div>
             </div>
+            {readOnly && employee.assessmentId && (
+                <div className="mt-6 flex justify-end">
+                    <button
+                        onClick={onDeleteAssessment}
+                        disabled={deleting}
+                        className="text-xs bg-red-600 text-white px-3 py-2 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50"
+                    >
+                        {deleting ? 'Удаление...' : 'Удалить оценку'}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

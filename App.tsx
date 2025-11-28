@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, EmployeeProfile, EmployeeResult, AppStep, PerformanceLevel, PotentialLevel } from './types';
-import { StepIndicator } from './components/StepIndicator';
 import { EmployeeSelector } from './components/EmployeeSelector';
 import { Assessment } from './components/Assessment';
 import { AssessmentComplete } from './components/AssessmentComplete';
@@ -101,9 +100,7 @@ const App: React.FC = () => {
             </div>
         </header>
 
-      {currentStep !== 'assessment_complete' && (
-          <StepIndicator currentStep={currentStep} />
-      )}
+      
       
       <main className="flex-1 w-full max-w-screen-xl mx-auto">
         

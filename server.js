@@ -322,6 +322,23 @@ app.post('/api/assessments', async (req, res) => {
     res.json(newAssessment);
 });
 
+app.delete('/api/assessments/:id', async (req, res) => {
+    const { id } = req.params;
+    const { adminId } = req.query;
+    const db = await readDB();
+    const admin = db.users.find(u => u.id === adminId);
+    if (!admin || admin.role !== 'admin') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const exists = db.assessments.find(a => a.id === id);
+    if (!exists) {
+        return res.status(404).json({ error: 'Assessment not found' });
+    }
+    db.assessments = db.assessments.filter(a => a.id !== id);
+    await writeDB(db);
+    res.json({ success: true });
+});
+
 // Catch all handler to return index.html for any request that doesn't match an API route
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));

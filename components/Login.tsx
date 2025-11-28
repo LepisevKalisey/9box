@@ -4,6 +4,8 @@ import { User } from '../types';
 import { LayoutGrid, ArrowRight, Lock, Mail, Loader2 } from 'lucide-react';
 import { authUser } from '../services/storageService';
 
+declare const __APP_VERSION__: string;
+
 interface Props {
   onLogin: (user: User) => void;
 }
@@ -38,8 +40,10 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
           </div>
         </div>
         
-        <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">9Box Talent Matrix</h1>
-        <p className="text-center text-gray-500 mb-8">Вход в систему оценки</p>
+        <h1 className="text-2xl font-bold text-center text-gray-900 mb-1">9Box Talent Matrix</h1>
+        <p className="text-center text-gray-500">Вход в систему оценки</p>
+        <div className="text-center text-[10px] text-gray-400 font-mono mt-1">Версия {__APP_VERSION__}</div>
+        <div className="h-6" />
 
         <form onSubmit={handleSubmit} className="space-y-4">
           

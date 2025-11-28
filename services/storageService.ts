@@ -162,7 +162,14 @@ export const getAdminResults = async (admin: User, filterUserId?: string, filter
           potential: assessment.potential,
           answers: assessment.answers,
           aiAdvice: assessment.aiAdvice,
-          date: assessment.date
+          date: assessment.date,
+          assessmentId: assessment.id,
+          assessedByUserId: assessment.userId
         };
       }).filter(Boolean) as EmployeeResult[];
+};
+
+export const deleteAssessment = async (admin: User, assessmentId: string): Promise<void> => {
+    if (admin.role !== 'admin') throw new Error('Unauthorized');
+    await api(`/assessments/${assessmentId}?adminId=${encodeURIComponent(admin.id)}`, { method: 'DELETE' });
 };

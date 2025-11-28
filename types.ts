@@ -67,6 +67,8 @@ export interface EmployeeResult extends EmployeeProfile {
   aiAdvice?: string;
   answers?: Record<string, number>;
   date?: string;
+  assessmentId?: string;
+  assessedByUserId?: string;
 }
 
 export type AppStep = 'login' | 'admin_dashboard' | 'select_employee' | 'assess' | 'assessment_complete' | 'results';

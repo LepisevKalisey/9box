@@ -13,7 +13,6 @@ interface Props {
 export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResults }) => {
   const [mode, setMode] = useState<'list' | 'create'>('list');
   const [available, setAvailable] = useState<EmployeeProfile[]>([]);
-  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [canCreate, setCanCreate] = useState(true);
@@ -66,7 +65,7 @@ export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResult
     }
   };
 
-  const filtered = available.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = available;
 
   return (
     <div className="max-w-md mx-auto p-4 md:p-6 pb-24">
@@ -90,16 +89,7 @@ export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResult
 
       {mode === 'list' && (
         <div className="animate-in fade-in duration-300">
-            <div className="relative mb-4">
-                <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
-                <input 
-                    type="text" 
-                    placeholder="Поиск сотрудника..." 
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-                />
-            </div>
+            
 
             {loading ? (
                 <div className="text-center py-10 text-gray-400">
