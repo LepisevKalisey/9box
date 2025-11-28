@@ -1,0 +1,5 @@
+{
+  "name": "Talent Matrix",
+  "description": "Инструмент для оценки талантов и кадрового потенциала по методике 9-box grid с поддержкой ИИ-рекомендаций.",
+  "requestFramePermissions": []
+}
