@@ -159,6 +159,22 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
             ))}
         </div>
 
+        {(activeTab === 'users' || activeTab === 'employees') && (
+            <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs font-bold text-gray-500 uppercase">Компания</span>
+                <select 
+                    value={selectedCompanyFilter} 
+                    onChange={(e) => setSelectedCompanyFilter(e.target.value)}
+                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                >
+                    <option value="">Все компании</option>
+                    {companies.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                </select>
+            </div>
+        )}
+
         {loading && <div className="text-center py-4"><Loader2 className="animate-spin inline mr-2"/>Обновление...</div>}
 
         {!loading && activeTab === 'companies' && (
@@ -266,7 +282,9 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                     </h2>
                     <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
                         {users.length === 0 && <p className="text-gray-400">Пока нет менеджеров</p>}
-                        {users.map(u => {
+                        {users
+                          .filter(u => !selectedCompanyFilter || u.companyId === selectedCompanyFilter)
+                          .map(u => {
                             const companyName = companies.find(c => c.id === u.companyId)?.name || 'Неизвестно';
                             return (
                                 <div key={u.id} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center group">
@@ -302,7 +320,9 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                 </h2>
                 <div className="space-y-2">
                     {allEmployees.length === 0 && <p className="text-gray-400 py-4 text-center">Список пуст</p>}
-                    {allEmployees.map(emp => {
+                    {allEmployees
+                        .filter(emp => !selectedCompanyFilter || emp.companyId === selectedCompanyFilter)
+                        .map(emp => {
                          const companyName = companies.find(c => c.id === emp.companyId)?.name || 'Неизвестно';
                          return (
                             <div key={emp.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">

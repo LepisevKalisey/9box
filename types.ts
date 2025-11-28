@@ -65,6 +65,7 @@ export interface EmployeeResult extends EmployeeProfile {
   potential: PotentialLevel | null;
   aiAdvice?: string;
   answers?: Record<string, number>;
+  date?: string;
 }
 
 export type AppStep = 'login' | 'admin_dashboard' | 'select_employee' | 'assess' | 'assessment_complete' | 'results';

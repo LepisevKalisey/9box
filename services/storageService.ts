@@ -33,7 +33,7 @@ export const deleteCompany = async (adminUser: User, companyId: string): Promise
         console.warn("Cannot delete the admin's own company");
         return;
     }
-    await api(`/companies/${companyId}`, { method: 'DELETE' });
+    await api(`/companies/${companyId}?adminId=${encodeURIComponent(adminUser.id)}`, { method: 'DELETE' });
 };
 
 export const authUser = async (email: string, password: string): Promise<User | null> => {
@@ -63,7 +63,7 @@ export const createUser = async (creator: User, newUser: { name: string, email: 
 export const deleteUser = async (adminUser: User, targetUserId: string): Promise<void> => {
     if (adminUser.role !== 'admin') return;
     if (adminUser.id === targetUserId) return;
-    await api(`/users/${targetUserId}`, { method: 'DELETE' });
+    await api(`/users/${targetUserId}?adminId=${encodeURIComponent(adminUser.id)}`, { method: 'DELETE' });
 };
 
 export const getCompanyUsers = async (adminUser: User): Promise<User[]> => {
@@ -73,8 +73,8 @@ export const getCompanyUsers = async (adminUser: User): Promise<User[]> => {
 
 export const getAvailableEmployees = async (user: User): Promise<EmployeeProfile[]> => {
     const [employees, assessments] = await Promise.all([
-        api<EmployeeProfile[]>('/employees'),
-        api<Assessment[]>('/assessments')
+        api<EmployeeProfile[]>(`/employees?companyId=${encodeURIComponent(user.companyId)}`),
+        api<Assessment[]>(`/assessments?userId=${encodeURIComponent(user.id)}`)
     ]);
 
     // Employees in my company
@@ -105,7 +105,7 @@ export const getGlobalEmployees = async (adminUser: User): Promise<EmployeeProfi
 
 export const deleteEmployee = async (adminUser: User, employeeId: string): Promise<void> => {
     if (adminUser.role !== 'admin') return;
-    await api(`/employees/${employeeId}`, { method: 'DELETE' });
+    await api(`/employees/${employeeId}?adminId=${encodeURIComponent(adminUser.id)}`, { method: 'DELETE' });
 };
 
 export const saveAssessment = async (user: User, employeeId: string, result: Omit<Assessment, 'id' | 'userId' | 'employeeId' | 'date'>): Promise<void> => {
@@ -116,12 +116,10 @@ export const saveAssessment = async (user: User, employeeId: string, result: Omi
 };
 
 export const getUserResults = async (user: User): Promise<EmployeeResult[]> => {
-    const [assessments, employees] = await Promise.all([
-        api<Assessment[]>('/assessments'),
-        api<EmployeeProfile[]>('/employees')
+    const [myAssessments, employees] = await Promise.all([
+        api<Assessment[]>(`/assessments?userId=${encodeURIComponent(user.id)}`),
+        api<EmployeeProfile[]>(`/employees?companyId=${encodeURIComponent(user.companyId)}`)
     ]);
-
-    const myAssessments = assessments.filter(a => a.userId === user.id);
   
     return myAssessments.map(assessment => {
         const profile = employees.find(e => e.id === assessment.employeeId);
@@ -131,28 +129,21 @@ export const getUserResults = async (user: User): Promise<EmployeeResult[]> => {
             performance: assessment.performance,
             potential: assessment.potential,
             answers: assessment.answers,
-            aiAdvice: assessment.aiAdvice
+            aiAdvice: assessment.aiAdvice,
+            date: assessment.date
         };
     }).filter(Boolean) as EmployeeResult[];
 };
 
 export const getAdminResults = async (admin: User, filterUserId?: string, filterCompanyId?: string): Promise<EmployeeResult[]> => {
-    const [assessments, employees, users] = await Promise.all([
-        api<Assessment[]>('/assessments'),
-        api<EmployeeProfile[]>('/employees'),
-        api<User[]>('/users')
+    const params: string[] = [];
+    if (filterUserId) params.push(`userId=${encodeURIComponent(filterUserId)}`);
+    if (filterCompanyId) params.push(`companyId=${encodeURIComponent(filterCompanyId)}`);
+    const query = params.length ? `?${params.join('&')}` : '';
+    const [filteredAssessments, employees] = await Promise.all([
+        api<Assessment[]>(`/assessments${query}`),
+        filterCompanyId ? api<EmployeeProfile[]>(`/employees?companyId=${encodeURIComponent(filterCompanyId)}`) : api<EmployeeProfile[]>('/employees')
     ]);
-
-    let filteredAssessments = assessments;
-    
-    if (filterCompanyId) {
-         const companyUserIds = users.filter(u => u.companyId === filterCompanyId).map(u => u.id);
-         filteredAssessments = filteredAssessments.filter(a => companyUserIds.includes(a.userId));
-    }
-
-    if (filterUserId) {
-        filteredAssessments = filteredAssessments.filter(a => a.userId === filterUserId);
-    }
 
     return filteredAssessments.map(assessment => {
         const profile = employees.find(e => e.id === assessment.employeeId);
@@ -162,7 +153,8 @@ export const getAdminResults = async (admin: User, filterUserId?: string, filter
           performance: assessment.performance,
           potential: assessment.potential,
           answers: assessment.answers,
-          aiAdvice: assessment.aiAdvice
+          aiAdvice: assessment.aiAdvice,
+          date: assessment.date
         };
       }).filter(Boolean) as EmployeeResult[];
 };

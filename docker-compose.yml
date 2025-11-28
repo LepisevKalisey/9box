@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    image: 9box-talent-matrix:latest
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - API_KEY=${API_KEY}
+    ports:
+      - "3001:3001"
+    volumes:
+      - 9box_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  9box_data:
+    driver: local

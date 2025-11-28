@@ -76,10 +76,16 @@ app.get('/api/companies', async (req, res) => {
 
 app.post('/api/companies', async (req, res) => {
     const { name } = req.body;
+    if (!name || typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ error: 'Invalid company name' });
+    }
     const db = await readDB();
+    if (db.companies.find(c => c.name.toLowerCase() === name.toLowerCase())) {
+        return res.status(400).json({ error: 'Company exists' });
+    }
     const newCompany = {
         id: `comp-${crypto.randomUUID()}`,
-        name
+        name: name.trim()
     };
     db.companies.push(newCompany);
     await writeDB(db);
@@ -88,7 +94,15 @@ app.post('/api/companies', async (req, res) => {
 
 app.delete('/api/companies/:id', async (req, res) => {
     const { id } = req.params;
+    const { adminId } = req.query;
     const db = await readDB();
+    const admin = db.users.find(u => u.id === adminId);
+    if (!admin || admin.role !== 'admin') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    if (admin.companyId === id) {
+        return res.status(400).json({ error: 'Cannot delete own company' });
+    }
     
     // Cascade delete
     db.companies = db.companies.filter(c => c.id !== id);
@@ -124,12 +138,19 @@ app.post('/api/users', async (req, res) => {
         return res.status(403).json({ error: 'Unauthorized' });
     }
     
-    if (db.users.find(u => u.email === newUser.email)) {
+    if (!newUser || !newUser.email || !newUser.name || !newUser.password) {
+        return res.status(400).json({ error: 'Invalid user data' });
+    }
+    if (db.users.find(u => u.email.toLowerCase() === newUser.email.toLowerCase())) {
         return res.status(400).json({ error: 'User exists' });
     }
 
     const userId = crypto.randomUUID();
     const companyId = newUser.companyId || creator.companyId;
+    const companyExists = db.companies.find(c => c.id === companyId);
+    if (!companyExists) {
+        return res.status(400).json({ error: 'Invalid companyId' });
+    }
 
     const user = {
         id: userId,
@@ -159,7 +180,12 @@ app.post('/api/users', async (req, res) => {
 
 app.delete('/api/users/:id', async (req, res) => {
     const { id } = req.params;
+    const { adminId } = req.query;
     const db = await readDB();
+    const admin = db.users.find(u => u.id === adminId);
+    if (!admin || admin.role !== 'admin') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
     
     db.users = db.users.filter(u => u.id !== id);
     db.assessments = db.assessments.filter(a => a.userId !== id);
@@ -178,6 +204,10 @@ app.delete('/api/users/:id', async (req, res) => {
 
 app.get('/api/employees', async (req, res) => {
     const db = await readDB();
+    const { companyId } = req.query;
+    if (companyId && typeof companyId === 'string') {
+        return res.json(db.employees.filter(e => e.companyId === companyId));
+    }
     res.json(db.employees);
 });
 
@@ -187,6 +217,13 @@ app.post('/api/employees', async (req, res) => {
     const user = db.users.find(u => u.id === userId);
     
     if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!name || !position) {
+        return res.status(400).json({ error: 'Invalid employee data' });
+    }
+    const exists = db.employees.find(e => e.companyId === user.companyId && e.name.toLowerCase() === String(name).toLowerCase() && e.position.toLowerCase() === String(position).toLowerCase());
+    if (exists) {
+        return res.status(400).json({ error: 'Employee exists' });
+    }
 
     const newEmp = {
         id: crypto.randomUUID(),
@@ -202,7 +239,12 @@ app.post('/api/employees', async (req, res) => {
 
 app.delete('/api/employees/:id', async (req, res) => {
     const { id } = req.params;
+    const { adminId } = req.query;
     const db = await readDB();
+    const admin = db.users.find(u => u.id === adminId);
+    if (!admin || admin.role !== 'admin') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
     db.employees = db.employees.filter(e => e.id !== id);
     db.assessments = db.assessments.filter(a => a.employeeId !== id);
     await writeDB(db);
@@ -213,12 +255,28 @@ app.delete('/api/employees/:id', async (req, res) => {
 
 app.get('/api/assessments', async (req, res) => {
     const db = await readDB();
-    res.json(db.assessments);
+    const { userId, companyId } = req.query;
+    let list = db.assessments;
+    if (userId && typeof userId === 'string') {
+        list = list.filter(a => a.userId === userId);
+    }
+    if (companyId && typeof companyId === 'string') {
+        const companyUserIds = db.users.filter(u => u.companyId === companyId).map(u => u.id);
+        list = list.filter(a => companyUserIds.includes(a.userId));
+    }
+    res.json(list);
 });
 
 app.post('/api/assessments', async (req, res) => {
     const { userId, employeeId, result } = req.body;
     const db = await readDB();
+    const employee = db.employees.find(e => e.id === employeeId);
+    if (!employee) {
+        return res.status(404).json({ error: 'Employee not found' });
+    }
+    if (employee.linkedUserId && employee.linkedUserId === userId) {
+        return res.status(400).json({ error: 'Self-assessment is not allowed' });
+    }
     
     // Remove old assessment
     db.assessments = db.assessments.filter(a => !(a.userId === userId && a.employeeId === employeeId));
