@@ -8,10 +8,9 @@ interface Props {
   employee: EmployeeProfile;
   onComplete: (results: { performance: PerformanceLevel, potential: PotentialLevel, answers: Record<string, number> }) => void;
   onBack: () => void;
-  onGoCompany?: () => void;
 }
 
-export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack, onGoCompany }) => {
+export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack }) => {
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
 
@@ -133,22 +132,14 @@ export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack, onGo
             </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 flex-none z-10 safe-area-bottom flex justify-between items-center">
+        {/* Back Button */}
+        <div className="p-4 flex-none z-10 safe-area-bottom">
             <button 
                 onClick={handlePrevStep}
                 className="flex items-center gap-2 text-gray-400 hover:text-gray-600 px-2 py-2 rounded-lg transition-colors text-sm font-medium"
             >
                 <ArrowLeft size={18} /> Назад
             </button>
-            {onGoCompany && (
-                <button 
-                    onClick={onGoCompany}
-                    className="text-xs bg-gray-900 text-white px-3 py-2 rounded-lg font-medium hover:bg-gray-800"
-                >
-                    К компании
-                </button>
-            )}
         </div>
     </div>
   );

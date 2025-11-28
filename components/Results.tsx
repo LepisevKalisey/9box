@@ -68,11 +68,11 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
   const renderGrid = () => (
     <div className="relative">
          {/* Y Axis Label */}
-         <div className="absolute -left-6 top-0 bottom-0 flex items-center justify-center">
-                <span className="-rotate-90 font-bold text-gray-400 tracking-widest text-xs whitespace-nowrap">ПОТЕНЦИАЛ</span>
+         <div className="absolute -left-10 top-0 bottom-0 flex items-center justify-center z-10">
+                <span className="-rotate-90 font-bold text-gray-500 tracking-widest text-xs whitespace-nowrap bg-white/90 px-1 rounded">ПОТЕНЦИАЛ</span>
         </div>
         
-        <div className="grid grid-rows-3 gap-2 h-[500px] lg:h-[600px] border-l-2 border-b-2 border-gray-300 p-2 ml-4">
+        <div className="grid grid-rows-3 gap-2 h-[500px] lg:h-[600px] border-l-2 border-b-2 border-gray-300 p-2 ml-12">
                 {[2, 1, 0].map(pot => (
                     <div key={`row-${pot}`} className="grid grid-cols-3 gap-2">
                         {[0, 1, 2].map(perf => {

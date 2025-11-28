@@ -262,7 +262,7 @@ app.post('/api/employees', async (req, res) => {
     
     if (!user) return res.status(404).json({ error: 'User not found' });
     const company = db.companies.find(c => c.id === user.companyId);
-    if (company && company.disableUserAddEmployees && user.role !== 'admin') {
+    if (company && company.disableUserAddEmployees && user.role !== 'admin' && user.role !== 'director') {
         return res.status(403).json({ error: 'Adding employees is disabled by company settings' });
     }
     if (!name || !position) {

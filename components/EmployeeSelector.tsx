@@ -8,9 +8,10 @@ interface Props {
   user: User;
   onSelect: (employee: EmployeeProfile) => void;
   onViewResults?: () => void;
+  onGoCompany?: () => void;
 }
 
-export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResults }) => {
+export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResults, onGoCompany }) => {
   const [mode, setMode] = useState<'list' | 'create'>('list');
   const [available, setAvailable] = useState<EmployeeProfile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResult
       try {
         const companies = await getCompanies();
         const company = companies.find(c => c.id === user.companyId);
-        const allowed = user.role === 'admin' || !company?.disableUserAddEmployees;
+        const allowed = user.role === 'admin' || user.role === 'director' || !company?.disableUserAddEmployees;
         setCanCreate(!!allowed);
         if (!allowed && mode === 'create') setMode('list');
       } catch (e) {
@@ -70,6 +71,7 @@ export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResult
   return (
     <div className="max-w-md mx-auto p-4 md:p-6 pb-24">
       
+      <h2 className="text-lg font-bold text-gray-900 mb-3">Выбор сотрудника</h2>
       <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
         <button
             onClick={() => setMode('list')}
@@ -165,15 +167,25 @@ export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResult
         </div>
       )}
 
-      {onViewResults && (
+      {(onViewResults || onGoCompany) && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-10 safe-area-bottom">
-          <div className="max-w-md mx-auto">
-              <button
-              onClick={onViewResults}
-              className="w-full py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 shadow-sm transition-transform active:scale-[0.98]"
-              >
-              Перейти к результатам
-              </button>
+          <div className="max-w-md mx-auto flex gap-2">
+              {onGoCompany && (
+                <button
+                  onClick={onGoCompany}
+                  className="w-1/2 py-3.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 shadow-sm"
+                >
+                  К компании
+                </button>
+              )}
+              {onViewResults && (
+                <button
+                  onClick={onViewResults}
+                  className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 shadow-sm transition-transform active:scale-[0.98]"
+                >
+                  Перейти к результатам
+                </button>
+              )}
           </div>
         </div>
       )}

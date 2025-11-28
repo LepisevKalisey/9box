@@ -115,6 +115,7 @@ const App: React.FC = () => {
             <EmployeeSelector 
                 user={user} 
                 onSelect={handleSelectEmployee}
+                onGoCompany={user?.role === 'director' ? () => setCurrentStep('director_dashboard') : undefined}
             />
         )}
 
@@ -123,7 +124,6 @@ const App: React.FC = () => {
                 employee={activeEmployee}
                 onComplete={handleAssessmentComplete}
                 onBack={() => setCurrentStep('select_employee')}
-                onGoCompany={user?.role === 'director' ? () => setCurrentStep('director_dashboard') : undefined}
             />
         )}
 
