@@ -158,7 +158,7 @@ app.post('/api/users', async (req, res) => {
     const db = await readDB();
     const creator = db.users.find(u => u.id === creatorId);
     
-    if (!creator || creator.role !== 'admin') {
+    if (!creator || (creator.role !== 'admin' && creator.role !== 'director')) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
     
@@ -170,10 +170,21 @@ app.post('/api/users', async (req, res) => {
     }
 
     const userId = crypto.randomUUID();
-    const companyId = newUser.companyId || creator.companyId;
+    const companyId = creator.role === 'director' ? creator.companyId : (newUser.companyId || creator.companyId);
     const companyExists = db.companies.find(c => c.id === companyId);
     if (!companyExists) {
         return res.status(400).json({ error: 'Invalid companyId' });
+    }
+
+    const role = newUser.role === 'director' ? 'director' : 'manager';
+    if (creator.role === 'director' && role === 'director') {
+        return res.status(403).json({ error: 'Director cannot create another director' });
+    }
+    if (role === 'director') {
+        const companyHasDirector = db.users.find(u => u.companyId === companyId && u.role === 'director');
+        if (companyHasDirector) {
+            return res.status(400).json({ error: 'Company already has a director' });
+        }
     }
 
     const user = {
@@ -181,7 +192,7 @@ app.post('/api/users', async (req, res) => {
         email: newUser.email,
         name: newUser.name,
         password: newUser.password,
-        role: 'manager',
+        role,
         companyId: companyId
     };
 
@@ -204,11 +215,20 @@ app.post('/api/users', async (req, res) => {
 
 app.delete('/api/users/:id', async (req, res) => {
     const { id } = req.params;
-    const { adminId } = req.query;
+    const { adminId, directorId } = req.query;
     const db = await readDB();
     const admin = db.users.find(u => u.id === adminId);
-    if (!admin || admin.role !== 'admin') {
+    const director = db.users.find(u => u.id === directorId);
+    const actor = admin || director;
+    if (!actor || (actor.role !== 'admin' && actor.role !== 'director')) {
         return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const target = db.users.find(u => u.id === id);
+    if (!target) return res.status(404).json({ error: 'User not found' });
+    if (actor.role === 'director') {
+        if (target.companyId !== actor.companyId) return res.status(403).json({ error: 'Forbidden' });
+        if (target.role === 'admin') return res.status(403).json({ error: 'Cannot delete admin' });
+        if (target.id === actor.id) return res.status(400).json({ error: 'Cannot delete self' });
     }
     
     db.users = db.users.filter(u => u.id !== id);
@@ -267,13 +287,19 @@ app.post('/api/employees', async (req, res) => {
 
 app.delete('/api/employees/:id', async (req, res) => {
     const { id } = req.params;
-    const { adminId } = req.query;
+    const { adminId, directorId } = req.query;
     const db = await readDB();
     const admin = db.users.find(u => u.id === adminId);
-    if (!admin || admin.role !== 'admin') {
+    const director = db.users.find(u => u.id === directorId);
+    const actor = admin || director;
+    if (!actor || (actor.role !== 'admin' && actor.role !== 'director')) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
     const employee = db.employees.find(e => e.id === id);
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+    if (actor.role === 'director' && employee.companyId !== actor.companyId) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
     db.employees = db.employees.filter(e => e.id !== id);
     db.assessments = db.assessments.filter(a => a.employeeId !== id);
     if (employee?.linkedUserId) {
@@ -335,10 +361,12 @@ app.post('/api/assessments', async (req, res) => {
 
 app.delete('/api/assessments/:id', async (req, res) => {
     const { id } = req.params;
-    const { adminId } = req.query;
+    const { adminId, directorId } = req.query;
     const db = await readDB();
     const admin = db.users.find(u => u.id === adminId);
-    if (!admin || admin.role !== 'admin') {
+    const director = db.users.find(u => u.id === directorId);
+    const actor = admin || director;
+    if (!actor || (actor.role !== 'admin' && actor.role !== 'director')) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
     const exists = db.assessments.find(a => a.id === id);
@@ -348,6 +376,33 @@ app.delete('/api/assessments/:id', async (req, res) => {
     db.assessments = db.assessments.filter(a => a.id !== id);
     await writeDB(db);
     res.json({ success: true });
+});
+
+// --- Director assignment ---
+app.post('/api/companies/:id/director', async (req, res) => {
+    const { id } = req.params;
+    const { adminId, directorId } = req.query;
+    const { userId } = req.body;
+    const db = await readDB();
+    const admin = db.users.find(u => u.id === adminId);
+    const directorActor = db.users.find(u => u.id === directorId);
+    const actor = admin || directorActor;
+    if (!actor || (actor.role !== 'admin' && actor.role !== 'director')) {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const company = db.companies.find(c => c.id === id);
+    if (!company) return res.status(404).json({ error: 'Company not found' });
+    if (actor.role === 'director' && actor.companyId !== id) return res.status(403).json({ error: 'Forbidden' });
+    const target = db.users.find(u => u.id === userId && u.companyId === id);
+    if (!target) return res.status(404).json({ error: 'User not found' });
+    // Demote existing director in company
+    const existingDirector = db.users.find(u => u.companyId === id && u.role === 'director');
+    if (existingDirector && existingDirector.id !== target.id) {
+        existingDirector.role = 'manager';
+    }
+    target.role = 'director';
+    await writeDB(db);
+    res.json(company);
 });
 
 // Catch all handler to return index.html for any request that doesn't match an API route

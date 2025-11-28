@@ -55,8 +55,8 @@ export const authUser = async (email: string, password: string): Promise<User | 
     }
 };
 
-export const createUser = async (creator: User, newUser: { name: string, email: string, password: string, companyId?: string }): Promise<boolean> => {
-    if (creator.role !== 'admin') return false;
+export const createUser = async (creator: User, newUser: { name: string, email: string, password: string, companyId?: string, role?: Role }): Promise<boolean> => {
+    if (creator.role !== 'admin' && creator.role !== 'director') return false;
     try {
         await api('/users', {
             method: 'POST',
@@ -68,10 +68,10 @@ export const createUser = async (creator: User, newUser: { name: string, email: 
     }
 };
 
-export const deleteUser = async (adminUser: User, targetUserId: string): Promise<void> => {
-    if (adminUser.role !== 'admin') return;
-    if (adminUser.id === targetUserId) return;
-    await api(`/users/${targetUserId}?adminId=${encodeURIComponent(adminUser.id)}`, { method: 'DELETE' });
+export const deleteUser = async (actor: User, targetUserId: string): Promise<void> => {
+    if (actor.id === targetUserId) return;
+    const queryRole = actor.role === 'admin' ? 'adminId' : 'directorId';
+    await api(`/users/${targetUserId}?${queryRole}=${encodeURIComponent(actor.id)}`, { method: 'DELETE' });
 };
 
 export const getCompanyUsers = async (adminUser: User): Promise<User[]> => {
@@ -111,9 +111,9 @@ export const getGlobalEmployees = async (adminUser: User): Promise<EmployeeProfi
     return api<EmployeeProfile[]>('/employees');
 };
 
-export const deleteEmployee = async (adminUser: User, employeeId: string): Promise<void> => {
-    if (adminUser.role !== 'admin') return;
-    await api(`/employees/${employeeId}?adminId=${encodeURIComponent(adminUser.id)}`, { method: 'DELETE' });
+export const deleteEmployee = async (actor: User, employeeId: string): Promise<void> => {
+    const queryRole = actor.role === 'admin' ? 'adminId' : 'directorId';
+    await api(`/employees/${employeeId}?${queryRole}=${encodeURIComponent(actor.id)}`, { method: 'DELETE' });
 };
 
 export const saveAssessment = async (user: User, employeeId: string, result: Omit<Assessment, 'id' | 'userId' | 'employeeId' | 'date'>): Promise<void> => {
@@ -170,6 +170,14 @@ export const getAdminResults = async (admin: User, filterUserId?: string, filter
 };
 
 export const deleteAssessment = async (admin: User, assessmentId: string): Promise<void> => {
-    if (admin.role !== 'admin') throw new Error('Unauthorized');
-    await api(`/assessments/${assessmentId}?adminId=${encodeURIComponent(admin.id)}`, { method: 'DELETE' });
+    const queryRole = admin.role === 'admin' ? 'adminId' : 'directorId';
+    await api(`/assessments/${assessmentId}?${queryRole}=${encodeURIComponent(admin.id)}`, { method: 'DELETE' });
+};
+
+export const setCompanyDirector = async (actor: User, companyId: string, userId: string): Promise<Company> => {
+    const queryRole = actor.role === 'admin' ? 'adminId' : 'directorId';
+    return api<Company>(`/companies/${companyId}/director?${queryRole}=${encodeURIComponent(actor.id)}`, {
+        method: 'POST',
+        body: JSON.stringify({ userId })
+    });
 };

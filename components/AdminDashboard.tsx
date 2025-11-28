@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, EmployeeProfile, Company } from '../types';
-import { createUser, getCompanyUsers, getAdminResults, getGlobalEmployees, deleteEmployee, createCompany, getCompanies, deleteUser, deleteCompany, updateCompany } from '../services/storageService';
+import { createUser, getCompanyUsers, getAdminResults, getGlobalEmployees, deleteEmployee, createCompany, getCompanies, deleteUser, deleteCompany, updateCompany, setCompanyDirector } from '../services/storageService';
 import { Results } from './Results';
 import { UserPlus, BarChart, Users, LogOut, Layout, Trash2, Database, Building, Loader2 } from 'lucide-react';
 
@@ -21,6 +21,7 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [selectedUserCompanyId, setSelectedUserCompanyId] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'manager' | 'director'>('manager');
   const [msg, setMsg] = useState('');
 
   const [newCompanyName, setNewCompanyName] = useState('');
@@ -71,7 +72,8 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
         name: newName, 
         email: newEmail, 
         password: newPassword,
-        companyId: selectedUserCompanyId 
+        companyId: selectedUserCompanyId,
+        role: newUserRole
     });
     if (success) {
         setMsg('Пользователь создан успешно!');
@@ -281,6 +283,17 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                             onChange={e => setNewName(e.target.value)}
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
                         />
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 mb-1 block uppercase">Роль</label>
+                            <select 
+                                value={newUserRole}
+                                onChange={e => setNewUserRole(e.target.value as any)}
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+                            >
+                                <option value="manager">Менеджер</option>
+                                <option value="director">Директор</option>
+                            </select>
+                        </div>
                          <input
                             type="email"
                             placeholder="Email (Логин)"
@@ -360,12 +373,28 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                                     <div className="text-xs text-gray-500">{emp.position}</div>
                                     <div className="text-[10px] uppercase font-bold text-blue-600 mt-1">{companyName}</div>
                                 </div>
-                                <button 
-                                    onClick={(e) => handleDeleteEmployee(e, emp.id)}
-                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={(e) => handleDeleteEmployee(e, emp.id)}
+                                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                    {emp.linkedUserId && (
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                setLoading(true);
+                                                await setCompanyDirector(user, emp.companyId, emp.linkedUserId!);
+                                                await loadData();
+                                                setLoading(false);
+                                            }}
+                                            className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                        >
+                                            Назначить директором
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         );
                     })}

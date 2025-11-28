@@ -11,7 +11,7 @@ export enum PotentialLevel {
   High = 2
 }
 
-export type Role = 'admin' | 'manager';
+export type Role = 'admin' | 'manager' | 'director';
 
 export interface Company {
   id: string;

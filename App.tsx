@@ -7,6 +7,7 @@ import { AssessmentComplete } from './components/AssessmentComplete';
 import { Results } from './components/Results';
 import { Login } from './components/Login';
 import { AdminDashboard } from './components/AdminDashboard';
+import { DirectorDashboard } from './components/DirectorDashboard';
 import { getUserResults, saveAssessment } from './services/storageService';
 
 const App: React.FC = () => {
@@ -30,6 +31,8 @@ const App: React.FC = () => {
     if (user) {
         if (user.role === 'admin') {
             setCurrentStep('admin_dashboard');
+        } else if (user.role === 'director') {
+            setCurrentStep('director_dashboard');
         } else {
             loadUserResults();
             if (currentStep === 'login') setCurrentStep('select_employee');
@@ -83,6 +86,9 @@ const App: React.FC = () => {
 
   if (currentStep === 'admin_dashboard' && user?.role === 'admin') {
       return <AdminDashboard user={user} onLogout={handleLogout} />;
+  }
+  if (currentStep === 'director_dashboard' && user?.role === 'director') {
+      return <DirectorDashboard user={user} onLogout={handleLogout} onGoAssess={() => setCurrentStep('select_employee')} />;
   }
 
   return (
