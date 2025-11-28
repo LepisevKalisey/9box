@@ -1,11 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { EmployeeResult, PerformanceLevel, PotentialLevel, User } from '../types';
-import { GET_BOX } from '../constants';
-import { generateDevelopmentPlan } from '../services/geminiService';
+import { GET_BOX, BOX_GUIDE } from '../constants';
 import { deleteAssessment } from '../services/storageService';
 import { RefreshCw, Sparkles, X, ChevronRight, LayoutGrid, List, UserPlus, AlertTriangle } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 
 interface Props {
   employees: EmployeeResult[];
@@ -17,8 +15,6 @@ interface Props {
 
 export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, readOnly = false, adminUser }) => {
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResult | null>(null);
-  const [loadingAdvice, setLoadingAdvice] = useState(false);
-  const [advice, setAdvice] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [deleting, setDeleting] = useState(false);
 
@@ -34,22 +30,8 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
 
   const handleEmployeeClick = (emp: EmployeeResult) => {
     setSelectedEmployee(emp);
-    setAdvice(emp.aiAdvice || null);
   };
 
-  const handleGetAdvice = async () => {
-    // Note: Removed readOnly check to allow Admins to generate advice
-    if (!selectedEmployee || selectedEmployee.performance === null || selectedEmployee.potential === null) return;
-    
-    setLoadingAdvice(true);
-    const box = GET_BOX(selectedEmployee.performance, selectedEmployee.potential);
-    
-    // In a real app we would save this to DB via a service call, 
-    // here we just update local state for the modal
-    const result = await generateDevelopmentPlan(selectedEmployee, box);
-    setAdvice(result);
-    setLoadingAdvice(false);
-  };
 
   const handleDeleteAssessment = async () => {
     if (!selectedEmployee || !selectedEmployee.assessmentId || !adminUser) return;
@@ -206,14 +188,11 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
         <div className="hidden lg:block w-96 bg-white rounded-xl shadow-lg border border-gray-100 p-6 h-fit sticky top-24">
              {selectedEmployee ? (
                  <EmployeeDetailContent 
-                    employee={selectedEmployee} 
-                    advice={advice}
-                    loading={loadingAdvice}
-                    onGetAdvice={handleGetAdvice}
-                    onClose={() => setSelectedEmployee(null)}
-                    readOnly={readOnly}
-                    onDeleteAssessment={handleDeleteAssessment}
-                    deleting={deleting}
+                   employee={selectedEmployee} 
+                   onClose={() => setSelectedEmployee(null)}
+                   readOnly={readOnly}
+                   onDeleteAssessment={handleDeleteAssessment}
+                   deleting={deleting}
                  />
              ) : (
                 <div className="text-center text-gray-400 py-20 flex flex-col items-center">
@@ -240,9 +219,6 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
                   <div className="p-6">
                       <EmployeeDetailContent 
                         employee={selectedEmployee} 
-                        advice={advice}
-                        loading={loadingAdvice}
-                        onGetAdvice={handleGetAdvice}
                         onClose={() => setSelectedEmployee(null)}
                         readOnly={readOnly}
                         onDeleteAssessment={handleDeleteAssessment}
@@ -258,15 +234,13 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
 
 const EmployeeDetailContent: React.FC<{
     employee: EmployeeResult;
-    advice: string | null;
-    loading: boolean;
-    onGetAdvice: () => void;
     onClose: () => void;
     readOnly?: boolean;
     onDeleteAssessment?: () => void;
     deleting?: boolean;
-}> = ({ employee, advice, loading, onGetAdvice, readOnly, onDeleteAssessment, deleting }) => {
+}> = ({ employee, readOnly, onDeleteAssessment, deleting }) => {
     const box = GET_BOX(employee.performance!, employee.potential!);
+    const guide = BOX_GUIDE[box.id];
 
     return (
         <div>
@@ -285,42 +259,20 @@ const EmployeeDetailContent: React.FC<{
               </div>
             )}
 
-            {/* AI Advice Section - Always visible, button active even for Admin */}
-            <div>
+            <div className="mt-4">
                 <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                        <Sparkles className="text-purple-600" size={18} />
-                        ИИ-Рекомендации
-                    </h4>
+                    <h4 className="font-bold text-gray-800">Краткое описание и рекомендации</h4>
                     {employee.date && (
                         <span className="text-xs text-gray-400">Дата оценки: {new Date(employee.date).toLocaleDateString()}</span>
                     )}
-                    {!advice && (
-                        <button
-                            onClick={onGetAdvice}
-                            disabled={loading}
-                            className="text-xs bg-purple-600 text-white px-3 py-2 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50"
-                        >
-                            {loading ? 'Думаю...' : 'Создать план'}
-                        </button>
-                    )}
                 </div>
-
-                <div className="bg-gray-50 rounded-xl p-4 min-h-[120px] text-sm text-gray-700 leading-relaxed border border-gray-200">
-                    {loading ? (
-                        <div className="flex flex-col items-center justify-center h-full py-4 text-gray-400 animate-pulse">
-                            <Sparkles size={24} className="mb-2" />
-                            <span>Анализ...</span>
-                        </div>
-                    ) : advice ? (
-                        <div className="prose prose-sm prose-purple max-w-none">
-                            <ReactMarkdown>{advice}</ReactMarkdown>
-                        </div>
-                    ) : (
-                        <div className="text-center text-gray-400 py-4 text-xs">
-                            Нажмите кнопку, чтобы получить конкретный план развития.
-                        </div>
-                    )}
+                <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed border border-gray-200">
+                    <div className="mb-3 font-medium">{guide.summary}</div>
+                    <ul className="list-disc pl-5 space-y-1">
+                        {guide.recommendations.map((r, i) => (
+                            <li key={i}>{r}</li>
+                        ))}
+                    </ul>
                 </div>
             </div>
             {readOnly && employee.assessmentId && (
