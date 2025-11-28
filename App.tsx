@@ -111,7 +111,6 @@ const App: React.FC = () => {
             <EmployeeSelector 
                 user={user} 
                 onSelect={handleSelectEmployee}
-                onViewResults={() => setCurrentStep('results')} 
             />
         )}
 
@@ -129,11 +128,10 @@ const App: React.FC = () => {
                     setActiveEmployee(null);
                     setCurrentStep('select_employee');
                 }}
-                onViewResults={() => setCurrentStep('results')}
             />
         )}
 
-        {currentStep === 'results' && (
+        {currentStep === 'results' && user?.role === 'admin' && (
             loadingResults ? (
                 <div className="flex justify-center py-20 text-gray-500">Загрузка результатов...</div>
             ) : (
@@ -141,6 +139,7 @@ const App: React.FC = () => {
                     employees={results}
                     onRestart={() => loadUserResults()}
                     onAddMore={() => setCurrentStep('select_employee')}
+                    readOnly={true}
                 />
             )
         )}

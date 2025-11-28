@@ -16,6 +16,7 @@ export type Role = 'admin' | 'manager';
 export interface Company {
   id: string;
   name: string;
+  disableUserAddEmployees?: boolean;
 }
 
 export interface User {

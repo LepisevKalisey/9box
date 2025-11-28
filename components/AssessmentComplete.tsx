@@ -3,7 +3,7 @@ import { CheckCircle, UserPlus, PieChart } from 'lucide-react';
 
 interface Props {
   onAssessNext: () => void;
-  onViewResults: () => void;
+  onViewResults?: () => void;
 }
 
 export const AssessmentComplete: React.FC<Props> = ({ onAssessNext, onViewResults }) => {
@@ -24,13 +24,15 @@ export const AssessmentComplete: React.FC<Props> = ({ onAssessNext, onViewResult
                 Оценить следующего
             </button>
             
-            <button 
-                onClick={onViewResults}
-                className="w-full py-4 bg-white text-gray-700 font-bold rounded-xl border-2 border-gray-100 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-            >
-                <PieChart size={20} />
-                Смотреть результаты
-            </button>
+            {onViewResults && (
+              <button 
+                  onClick={onViewResults}
+                  className="w-full py-4 bg-white text-gray-700 font-bold rounded-xl border-2 border-gray-100 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+              >
+                  <PieChart size={20} />
+                  Смотреть результаты
+              </button>
+            )}
         </div>
     </div>
   );

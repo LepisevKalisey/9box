@@ -20,10 +20,18 @@ export const getCompanies = async (): Promise<Company[]> => {
     return api<Company[]>('/companies');
 };
 
-export const createCompany = async (name: string): Promise<Company> => {
+export const createCompany = async (name: string, options?: { disableUserAddEmployees?: boolean }): Promise<Company> => {
     return api<Company>('/companies', {
         method: 'POST',
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ name, disableUserAddEmployees: options?.disableUserAddEmployees ?? false })
+    });
+};
+
+export const updateCompany = async (adminUser: User, companyId: string, payload: Partial<Company>): Promise<Company> => {
+    if (adminUser.role !== 'admin') throw new Error('Unauthorized');
+    return api<Company>(`/companies/${companyId}?adminId=${encodeURIComponent(adminUser.id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
     });
 };
 

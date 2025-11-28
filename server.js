@@ -43,7 +43,7 @@ const initDB = async () => {
             }],
             employees: [],
             assessments: [],
-            companies: [{ id: 'company-mides', name: 'MIDES' }]
+            companies: [{ id: 'company-mides', name: 'MIDES', disableUserAddEmployees: false }]
         };
         await fs.writeFile(DB_FILE, JSON.stringify(defaultDB, null, 2));
     }
@@ -75,7 +75,7 @@ app.get('/api/companies', async (req, res) => {
 });
 
 app.post('/api/companies', async (req, res) => {
-    const { name } = req.body;
+    const { name, disableUserAddEmployees } = req.body;
     if (!name || typeof name !== 'string' || !name.trim()) {
         return res.status(400).json({ error: 'Invalid company name' });
     }
@@ -85,11 +85,35 @@ app.post('/api/companies', async (req, res) => {
     }
     const newCompany = {
         id: `comp-${crypto.randomUUID()}`,
-        name: name.trim()
+        name: name.trim(),
+        disableUserAddEmployees: !!disableUserAddEmployees
     };
     db.companies.push(newCompany);
     await writeDB(db);
     res.json(newCompany);
+});
+
+app.put('/api/companies/:id', async (req, res) => {
+    const { id } = req.params;
+    const { adminId } = req.query;
+    const { name, disableUserAddEmployees } = req.body;
+    const db = await readDB();
+    const admin = db.users.find(u => u.id === adminId);
+    if (!admin || admin.role !== 'admin') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const company = db.companies.find(c => c.id === id);
+    if (!company) {
+        return res.status(404).json({ error: 'Company not found' });
+    }
+    if (typeof name === 'string' && name.trim()) {
+        company.name = name.trim();
+    }
+    if (typeof disableUserAddEmployees === 'boolean') {
+        company.disableUserAddEmployees = disableUserAddEmployees;
+    }
+    await writeDB(db);
+    res.json(company);
 });
 
 app.delete('/api/companies/:id', async (req, res) => {
@@ -217,6 +241,10 @@ app.post('/api/employees', async (req, res) => {
     const user = db.users.find(u => u.id === userId);
     
     if (!user) return res.status(404).json({ error: 'User not found' });
+    const company = db.companies.find(c => c.id === user.companyId);
+    if (company && company.disableUserAddEmployees && user.role !== 'admin') {
+        return res.status(403).json({ error: 'Adding employees is disabled by company settings' });
+    }
     if (!name || !position) {
         return res.status(400).json({ error: 'Invalid employee data' });
     }

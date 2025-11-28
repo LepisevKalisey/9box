@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, EmployeeProfile, Company } from '../types';
-import { createUser, getCompanyUsers, getAdminResults, getGlobalEmployees, deleteEmployee, createCompany, getCompanies, deleteUser, deleteCompany } from '../services/storageService';
+import { createUser, getCompanyUsers, getAdminResults, getGlobalEmployees, deleteEmployee, createCompany, getCompanies, deleteUser, deleteCompany, updateCompany } from '../services/storageService';
 import { Results } from './Results';
 import { UserPlus, BarChart, Users, LogOut, Layout, Trash2, Database, Building, Loader2 } from 'lucide-react';
 
@@ -24,6 +24,7 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
   const [msg, setMsg] = useState('');
 
   const [newCompanyName, setNewCompanyName] = useState('');
+  const [newCompanyDisableAdd, setNewCompanyDisableAdd] = useState(false);
 
   const [selectedManagerId, setSelectedManagerId] = useState<string>('');
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
@@ -87,8 +88,9 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
       e.preventDefault();
       if (!newCompanyName.trim()) return;
       setLoading(true);
-      await createCompany(newCompanyName);
+      await createCompany(newCompanyName, { disableUserAddEmployees: newCompanyDisableAdd });
       setNewCompanyName('');
+      setNewCompanyDisableAdd(false);
       await loadData();
       setLoading(false);
   };
@@ -193,6 +195,14 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                             onChange={e => setNewCompanyName(e.target.value)}
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
                         />
+                        <label className="flex items-center gap-2 text-sm text-gray-700">
+                            <input
+                                type="checkbox"
+                                checked={newCompanyDisableAdd}
+                                onChange={e => setNewCompanyDisableAdd(e.target.checked)}
+                            />
+                            Запретить менеджерам добавлять сотрудников
+                        </label>
                         <button className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors">
                             Добавить компанию
                         </button>
@@ -208,7 +218,22 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                         {companies.length === 0 && <p className="text-gray-400">Пока нет компаний</p>}
                         {companies.map(c => (
                             <div key={c.id} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center group">
-                                <span className="font-bold text-gray-800">{c.name}</span>
+                                <div>
+                                    <div className="font-bold text-gray-800">{c.name}</div>
+                                    <label className="flex items-center gap-2 text-[12px] text-gray-700 mt-1">
+                                        <input
+                                            type="checkbox"
+                                            checked={!!c.disableUserAddEmployees}
+                                            onChange={async (e) => {
+                                                setLoading(true);
+                                                await updateCompany(user, c.id, { disableUserAddEmployees: e.target.checked });
+                                                await loadData();
+                                                setLoading(false);
+                                            }}
+                                        />
+                                        Запретить добавление сотрудника менеджерами
+                                    </label>
+                                </div>
                                 <div className="flex items-center gap-2">
                                      <button 
                                         onClick={(e) => handleDeleteCompany(e, c.id)}
