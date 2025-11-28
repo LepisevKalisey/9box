@@ -6,11 +6,12 @@ services:
     working_dir: /src
     environment:
       - NPM_CONFIG_REGISTRY=https://registry.npmjs.org
-    command: sh -c "npm install --no-audit --no-fund --legacy-peer-deps && npm run build && mkdir -p /out/dist && cp -r dist/* /out/dist/ && npm prune --omit=dev && mkdir -p /out/node_modules && cp -r node_modules/* /out/node_modules/"
+    command: sh -c "npm install --no-audit --no-fund --legacy-peer-deps && npm run build && npm prune --omit=dev && mkdir -p /out/dist /out/node_modules /out/app && cp -r dist/* /out/dist/ && cp -r node_modules/* /out/node_modules/ && cp -r server.js package.json /out/app/"
     volumes:
       - ./:/src
       - web_dist:/out/dist
       - server_node_modules:/out/node_modules
+      - app_src:/out/app
     restart: 'no'
 
   app:
@@ -26,7 +27,7 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./:/app
+      - app_src:/app
       - web_dist:/app/dist
       - server_node_modules:/app/node_modules
       - 9box_data:/app/data
@@ -36,6 +37,8 @@ volumes:
   web_dist:
     driver: local
   server_node_modules:
+    driver: local
+  app_src:
     driver: local
   9box_data:
     driver: local
