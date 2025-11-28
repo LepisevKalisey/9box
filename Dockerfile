@@ -5,4 +5,4 @@ ENV PORT=3001
 COPY . .
 EXPOSE 3001
 VOLUME ["/app/data"]
-CMD ["bash", "-lc", "(npm ci || npm install --no-audit --no-fund --no-optional) && npm run build && node server.js"]
+CMD ["bash", "-lc", "npm install --no-audit --no-fund && npm run build && node server.js"]
