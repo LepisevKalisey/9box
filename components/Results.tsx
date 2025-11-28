@@ -4,7 +4,7 @@ import { EmployeeResult, PerformanceLevel, PotentialLevel, User } from '../types
 import { GET_BOX } from '../constants';
 import { generateDevelopmentPlan } from '../services/geminiService';
 import { deleteAssessment } from '../services/storageService';
-import { RefreshCw, Sparkles, X, ChevronRight, LayoutGrid, List, UserPlus } from 'lucide-react';
+import { RefreshCw, Sparkles, X, ChevronRight, LayoutGrid, List, UserPlus, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface Props {
@@ -94,7 +94,10 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
                                                 onClick={() => handleEmployeeClick(emp)}
                                                 className="w-full text-left bg-white/60 hover:bg-white px-2 py-1 rounded text-xs shadow-sm transition-colors flex items-center justify-between group"
                                             >
-                                                <span className="truncate font-medium text-gray-900">{emp.name}</span>
+                                                <span className="truncate font-medium text-gray-900 flex items-center gap-1">
+                                                  {emp.riskFlag && <AlertTriangle size={12} className="text-red-500" />}
+                                                  {emp.name}
+                                                </span>
                                             </button>
                                         ))}
                                     </div>
@@ -147,6 +150,7 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
                                     <div className="text-xs text-gray-500">{emp.position}</div>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                     {emp.riskFlag && <AlertTriangle size={14} className="text-red-500" />}
                                      {emp.aiAdvice && <Sparkles size={14} className="text-purple-500" />}
                                      <ChevronRight size={16} className="text-gray-300" />
                                 </div>
@@ -272,9 +276,14 @@ const EmployeeDetailContent: React.FC<{
             </div>
 
             <div className={`p-4 rounded-xl mb-6 ${box.color} ${box.textColor} ring-1 ring-black/5`}>
-                <div className="font-bold text-lg mb-1">{box.name}</div>
-                <div className="text-sm opacity-90 leading-snug">{box.description}</div>
+              <div className="font-bold text-lg mb-1">{box.name}</div>
+              <div className="text-sm opacity-90 leading-snug">{box.description}</div>
             </div>
+            {employee.riskFlag && (
+              <div className="mb-6 flex items-center gap-2 text-red-600 font-bold text-sm">
+                 <AlertTriangle size={16} /> Риск ухода: требуется план удержания
+              </div>
+            )}
 
             {/* AI Advice Section - Always visible, button active even for Admin */}
             <div>

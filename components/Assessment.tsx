@@ -41,13 +41,37 @@ export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack }) =>
   };
 
   const finishAssessment = (finalAnswers: Record<string, number>) => {
-    const perfScore = calculateScore(finalAnswers, 'performance');
-    const potScore = calculateScore(finalAnswers, 'potential');
-    
+    let perfScore = calculateScore(finalAnswers, 'performance');
+    let potScore = calculateScore(finalAnswers, 'potential');
+
+    const quitFeel = finalAnswers['val_quit_feel'];
+    const replaceRisk = finalAnswers['val_risk'];
+    const promoReady = finalAnswers['val_promo'];
+
+    if (quitFeel !== undefined && quitFeel <= 1) {
+      perfScore = Math.min(perfScore, 5);
+    } else if (replaceRisk === 2) {
+      perfScore = Math.min(perfScore, 5);
+    }
+
+    let performanceLevel = mapScoreToLevel(perfScore);
+    let potentialLevel = mapScoreToLevel(potScore);
+
+    if ((quitFeel !== undefined && quitFeel <= 1) || replaceRisk === 2) {
+      performanceLevel = Math.max(0, (performanceLevel as number) - 1) as PerformanceLevel;
+    }
+
+    if (promoReady === 2 && potScore === 4) {
+      potentialLevel = 2 as PotentialLevel;
+    }
+    if (promoReady === 0) {
+      potentialLevel = Math.min(potentialLevel as number, 1) as PotentialLevel;
+    }
+
     onComplete({
-        performance: mapScoreToLevel(perfScore),
-        potential: mapScoreToLevel(potScore),
-        answers: finalAnswers
+      performance: performanceLevel,
+      potential: potentialLevel,
+      answers: finalAnswers
     });
   };
 

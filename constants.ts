@@ -204,5 +204,27 @@ export const ASSESSMENT_QUESTIONS: Question[] = [
       { value: 1, label: 'Частично', description: 'С моим присмотром.' },
       { value: 2, label: 'Да, абсолютно', description: 'Я уверен, что он справится не хуже меня.' }
     ]
+  },
+  {
+    id: 'val_quit_feel',
+    category: 'calibration',
+    title: 'В. Если бы он уволился',
+    questionText: 'Если бы сотрудник уволился завтра, что бы вы почувствовали?',
+    options: [
+      { value: 0, label: 'С облегчением', description: 'Его уход не вызовет проблем.' },
+      { value: 1, label: 'Найдем замену без проблем', description: 'Потеря некритична.' },
+      { value: 2, label: 'Будет проблемой', description: 'Его уход создаст заметные риски.' }
+    ]
+  },
+  {
+    id: 'val_retention',
+    category: 'calibration',
+    title: 'Г. Если он захочет уйти',
+    questionText: 'Если ключевой сотрудник скажет, что уходит, ваши действия?',
+    options: [
+      { value: 0, label: 'Пожелаю удачи', description: 'Не буду удерживать.' },
+      { value: 1, label: 'Постараюсь обсудить', description: 'Попробую предложить компромисс.' },
+      { value: 2, label: 'Сделаю всё, чтобы удержать', description: 'Готов действовать, чтобы сохранить.' }
+    ]
   }
 ];

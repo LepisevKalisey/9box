@@ -136,13 +136,15 @@ export const getUserResults = async (user: User): Promise<EmployeeResult[]> => {
     return myAssessments.map(assessment => {
         const profile = employees.find(e => e.id === assessment.employeeId);
         if (!profile) return null;
+        const riskFlag = assessment.performance === 2 && assessment.potential === 2 && assessment.answers?.['val_retention'] === 2;
         return {
-            ...profile,
-            performance: assessment.performance,
-            potential: assessment.potential,
-            answers: assessment.answers,
-            aiAdvice: assessment.aiAdvice,
-            date: assessment.date
+          ...profile,
+          performance: assessment.performance,
+          potential: assessment.potential,
+          answers: assessment.answers,
+          aiAdvice: assessment.aiAdvice,
+          date: assessment.date,
+          riskFlag
         };
     }).filter(Boolean) as EmployeeResult[];
 };
@@ -160,6 +162,7 @@ export const getAdminResults = async (admin: User, filterUserId?: string, filter
     return filteredAssessments.map(assessment => {
         const profile = employees.find(e => e.id === assessment.employeeId);
         if (!profile) return null;
+        const riskFlag = assessment.performance === 2 && assessment.potential === 2 && assessment.answers?.['val_retention'] === 2;
         return {
           ...profile,
           performance: assessment.performance,
@@ -168,7 +171,8 @@ export const getAdminResults = async (admin: User, filterUserId?: string, filter
           aiAdvice: assessment.aiAdvice,
           date: assessment.date,
           assessmentId: assessment.id,
-          assessedByUserId: assessment.userId
+          assessedByUserId: assessment.userId,
+          riskFlag
         };
       }).filter(Boolean) as EmployeeResult[];
 };

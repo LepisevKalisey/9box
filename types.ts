@@ -69,6 +69,7 @@ export interface EmployeeResult extends EmployeeProfile {
   date?: string;
   assessmentId?: string;
   assessedByUserId?: string;
+  riskFlag?: boolean;
 }
 
 export type AppStep = 'login' | 'admin_dashboard' | 'director_dashboard' | 'select_employee' | 'assess' | 'assessment_complete' | 'results';
