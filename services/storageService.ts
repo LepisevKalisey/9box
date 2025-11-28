@@ -80,9 +80,10 @@ export const getCompanyUsers = async (adminUser: User): Promise<User[]> => {
 };
 
 export const getAvailableEmployees = async (user: User): Promise<EmployeeProfile[]> => {
-    const [employees, assessments] = await Promise.all([
+    const [employees, assessments, users] = await Promise.all([
         api<EmployeeProfile[]>(`/employees?companyId=${encodeURIComponent(user.companyId)}`),
-        api<Assessment[]>(`/assessments?userId=${encodeURIComponent(user.id)}`)
+        api<Assessment[]>(`/assessments?userId=${encodeURIComponent(user.id)}`),
+        api<User[]>('/users')
     ]);
 
     // Employees in my company
@@ -93,8 +94,11 @@ export const getAvailableEmployees = async (user: User): Promise<EmployeeProfile
     const assessedIds = new Set(myAssessments.map(a => a.employeeId));
 
     // Exclude myself
+    const userById = new Map(users.map(u => [u.id, u]));
     return companyEmployees.filter(e => {
         if (e.linkedUserId === user.id) return false;
+        const linked = e.linkedUserId ? userById.get(e.linkedUserId) : undefined;
+        if (linked?.role === 'director') return false;
         return !assessedIds.has(e.id);
     });
 };

@@ -134,8 +134,8 @@ export const DirectorDashboard: React.FC<Props> = ({ user, onLogout, onGoAssess 
               </h2>
               <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
                 {users.length === 0 && <p className="text-gray-400">Пока нет пользователей</p>}
-                {users.map(u => (
-                  <div key={u.id} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center group">
+                {users.sort((a,b) => (a.role === 'director' ? -1 : 1) - (b.role === 'director' ? -1 : 1)).map(u => (
+                  <div key={u.id} className={`p-3 rounded-lg flex justify-between items-center group ${u.role === 'director' ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}>
                     <div>
                       <div className="font-bold text-gray-800">{u.name}</div>
                       <div className="text-xs text-gray-500">{u.email}</div>
@@ -176,4 +176,3 @@ export const DirectorDashboard: React.FC<Props> = ({ user, onLogout, onGoAssess 
     </div>
   )
 }
-

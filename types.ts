@@ -71,4 +71,4 @@ export interface EmployeeResult extends EmployeeProfile {
   assessedByUserId?: string;
 }
 
-export type AppStep = 'login' | 'admin_dashboard' | 'select_employee' | 'assess' | 'assessment_complete' | 'results';
+export type AppStep = 'login' | 'admin_dashboard' | 'director_dashboard' | 'select_employee' | 'assess' | 'assessment_complete' | 'results';

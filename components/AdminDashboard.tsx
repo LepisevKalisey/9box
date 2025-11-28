@@ -326,10 +326,11 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                         {users.length === 0 && <p className="text-gray-400">Пока нет менеджеров</p>}
                         {users
                           .filter(u => !selectedCompanyFilter || u.companyId === selectedCompanyFilter)
+                          .sort((a,b) => (a.role === 'director' ? -1 : 1) - (b.role === 'director' ? -1 : 1))
                           .map(u => {
                             const companyName = companies.find(c => c.id === u.companyId)?.name || 'Неизвестно';
                             return (
-                                <div key={u.id} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center group">
+                                <div key={u.id} className={`p-3 rounded-lg flex justify-between items-center group ${u.role === 'director' ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}>
                                     <div>
                                         <div className="font-bold text-gray-800">{u.name}</div>
                                         <div className="text-xs text-gray-500">{u.email}</div>
@@ -342,6 +343,7 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                                         <button 
                                             onClick={(e) => handleDeleteUser(e, u.id)}
                                             className="text-red-300 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
+                                            disabled={u.role === 'director'}
                                         >
                                             <Trash2 size={16} />
                                         </button>
@@ -366,8 +368,9 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                         .filter(emp => !selectedCompanyFilter || emp.companyId === selectedCompanyFilter)
                         .map(emp => {
                          const companyName = companies.find(c => c.id === emp.companyId)?.name || 'Неизвестно';
+                         const directorLinked = users.find(u => u.role === 'director' && u.companyId === emp.companyId && u.id === emp.linkedUserId);
                          return (
-                            <div key={emp.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                            <div key={emp.id} className={`flex justify-between items-center p-3 rounded-lg hover:bg-gray-100 transition-colors ${directorLinked ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}>
                                 <div>
                                     <div className="font-bold text-gray-900">{emp.name}</div>
                                     <div className="text-xs text-gray-500">{emp.position}</div>
