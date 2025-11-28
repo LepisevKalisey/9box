@@ -2,15 +2,18 @@ version: '3.8'
 
 services:
   app:
-    build: .
-    image: 9box-talent-matrix:latest
+    image: node:20-alpine
+    working_dir: /app
     environment:
       - NODE_ENV=production
       - PORT=3001
       - API_KEY=${API_KEY}
+      - NPM_CONFIG_REGISTRY=https://registry.npmjs.org
+    command: sh -c "npm install --no-audit --no-fund --legacy-peer-deps && npm run build && node server.js"
     ports:
       - "3001:3001"
     volumes:
+      - ./:/app
       - 9box_data:/app/data
     restart: unless-stopped
 
