@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { User, EmployeeProfile, EmployeeResult, AppStep, Assessment as AssessmentType, PerformanceLevel, PotentialLevel } from './types';
+import { User, EmployeeProfile, EmployeeResult, AppStep, PerformanceLevel, PotentialLevel } from './types';
 import { StepIndicator } from './components/StepIndicator';
 import { EmployeeSelector } from './components/EmployeeSelector';
 import { Assessment } from './components/Assessment';
@@ -13,15 +14,16 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentStep, setCurrentStep] = useState<AppStep>('login');
   
-  // State for single employee flow
   const [activeEmployee, setActiveEmployee] = useState<EmployeeProfile | null>(null);
   const [results, setResults] = useState<EmployeeResult[]>([]);
+  const [loadingResults, setLoadingResults] = useState(false);
 
   // Load user from session
   useEffect(() => {
     const savedUser = localStorage.getItem('9box_user_session');
     if (savedUser) {
-        setUser(JSON.parse(savedUser));
+        const u = JSON.parse(savedUser);
+        setUser(u);
     }
   }, []);
 
@@ -30,7 +32,6 @@ const App: React.FC = () => {
         if (user.role === 'admin') {
             setCurrentStep('admin_dashboard');
         } else {
-            // If user, load their results
             loadUserResults();
             if (currentStep === 'login') setCurrentStep('select_employee');
         }
@@ -39,9 +40,17 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  const loadUserResults = () => {
+  const loadUserResults = async () => {
       if (user) {
-          setResults(getUserResults(user));
+          setLoadingResults(true);
+          try {
+             const data = await getUserResults(user);
+             setResults(data);
+          } catch (e) {
+             console.error(e);
+          } finally {
+             setLoadingResults(false);
+          }
       }
   };
 
@@ -62,14 +71,12 @@ const App: React.FC = () => {
       setCurrentStep('assess');
   };
 
-  const handleAssessmentComplete = (data: { performance: PerformanceLevel, potential: PotentialLevel, answers: Record<string, number> }) => {
+  const handleAssessmentComplete = async (data: { performance: PerformanceLevel, potential: PotentialLevel, answers: Record<string, number> }) => {
       if (!user || !activeEmployee) return;
-      saveAssessment(user, activeEmployee.id, data);
-      loadUserResults(); // Refresh data
+      await saveAssessment(user, activeEmployee.id, data);
+      await loadUserResults(); 
       setCurrentStep('assessment_complete');
   };
-
-  // --- Step Renders ---
 
   if (currentStep === 'login') {
       return <Login onLogin={handleLogin} />;
@@ -79,10 +86,8 @@ const App: React.FC = () => {
       return <AdminDashboard user={user} onLogout={handleLogout} />;
   }
 
-  // Manager View
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-        {/* Header */}
         <header className="bg-white border-b border-gray-100 py-3 px-4 flex justify-between items-center safe-area-top">
             <h1 className="text-sm font-bold text-gray-900 tracking-tight">9Box Matrix</h1>
             <div className="flex items-center gap-3">
@@ -96,7 +101,6 @@ const App: React.FC = () => {
             </div>
         </header>
 
-      {/* Conditionally show StepIndicator for Manager Flow if not in simple mode */}
       {currentStep !== 'assessment_complete' && (
           <StepIndicator currentStep={currentStep} />
       )}
@@ -130,11 +134,15 @@ const App: React.FC = () => {
         )}
 
         {currentStep === 'results' && (
-            <Results 
-                employees={results}
-                onRestart={() => loadUserResults()}
-                onAddMore={() => setCurrentStep('select_employee')}
-            />
+            loadingResults ? (
+                <div className="flex justify-center py-20 text-gray-500">Загрузка результатов...</div>
+            ) : (
+                <Results 
+                    employees={results}
+                    onRestart={() => loadUserResults()}
+                    onAddMore={() => setCurrentStep('select_employee')}
+                />
+            )
         )}
       </main>
     </div>

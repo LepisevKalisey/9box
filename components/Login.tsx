@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { User } from '../types';
-import { LayoutGrid, ArrowRight, Lock, Mail } from 'lucide-react';
+import { LayoutGrid, ArrowRight, Lock, Mail, Loader2 } from 'lucide-react';
 import { authUser } from '../services/storageService';
 
 interface Props {
@@ -12,11 +12,16 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const user = authUser(email, password);
+    setIsLoading(true);
+    
+    const user = await authUser(email, password);
+    setIsLoading(false);
+    
     if (user) {
       onLogin(user);
     } else {
@@ -49,6 +54,7 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
             />
           </div>
 
@@ -63,6 +69,7 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
               placeholder="Пароль"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
             />
           </div>
 
@@ -70,9 +77,10 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
 
           <button
             type="submit"
-            className="w-full bg-gray-900 text-white font-semibold py-3 rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2 mt-6 shadow-md hover:shadow-lg"
+            disabled={isLoading}
+            className="w-full bg-gray-900 text-white font-semibold py-3 rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2 mt-6 shadow-md hover:shadow-lg disabled:opacity-70"
           >
-            Войти <ArrowRight size={18} />
+            {isLoading ? <Loader2 className="animate-spin" size={20} /> : <><span className="text-white">Войти</span> <ArrowRight size={18} /></>}
           </button>
         </form>
 

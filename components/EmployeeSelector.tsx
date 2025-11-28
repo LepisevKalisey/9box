@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { EmployeeProfile, User } from '../types';
 import { getAvailableEmployees, createEmployee } from '../services/storageService';
-import { Plus, User as UserIcon, Search, ChevronRight } from 'lucide-react';
+import { Plus, Search, ChevronRight, Loader2 } from 'lucide-react';
 
 interface Props {
   user: User;
@@ -13,25 +14,40 @@ export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResult
   const [mode, setMode] = useState<'list' | 'create'>('list');
   const [available, setAvailable] = useState<EmployeeProfile[]>([]);
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
   
-  // Create Form
   const [newName, setNewName] = useState('');
   const [newPosition, setNewPosition] = useState('');
 
   useEffect(() => {
     loadList();
-  }, []);
+  }, [user]);
 
-  const loadList = () => {
-    setAvailable(getAvailableEmployees(user));
+  const loadList = async () => {
+    setLoading(true);
+    try {
+        const list = await getAvailableEmployees(user);
+        setAvailable(list);
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setLoading(false);
+    }
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName || !newPosition) return;
     
-    const newEmp = createEmployee(user, newName, newPosition);
-    onSelect(newEmp); // Immediate start
+    setCreating(true);
+    try {
+        const newEmp = await createEmployee(user, newName, newPosition);
+        onSelect(newEmp);
+    } catch (e) {
+        console.error(e);
+        setCreating(false);
+    }
   };
 
   const filtered = available.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
@@ -39,7 +55,6 @@ export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResult
   return (
     <div className="max-w-md mx-auto p-4 md:p-6 pb-24">
       
-      {/* Header Tabs */}
       <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
         <button
             onClick={() => setMode('list')}
@@ -68,7 +83,11 @@ export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResult
                 />
             </div>
 
-            {filtered.length === 0 ? (
+            {loading ? (
+                <div className="text-center py-10 text-gray-400">
+                    <Loader2 className="animate-spin mx-auto mb-2" /> Загрузка...
+                </div>
+            ) : filtered.length === 0 ? (
                 <div className="text-center py-10">
                     <p className="text-gray-400 mb-4">Нет доступных сотрудников для оценки.</p>
                     <button onClick={() => setMode('create')} className="text-blue-600 font-bold text-sm">
@@ -120,10 +139,11 @@ export const EmployeeSelector: React.FC<Props> = ({ user, onSelect, onViewResult
                 </div>
                 <button
                     type="submit"
-                    disabled={!newName || !newPosition}
+                    disabled={!newName || !newPosition || creating}
                     className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 mt-2 shadow-sm"
                 >
-                    <Plus size={18} /> Создать и оценить
+                    {creating ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />} 
+                    Создать и оценить
                 </button>
                 </form>
             </div>

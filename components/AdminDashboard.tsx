@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { User, EmployeeProfile, Company } from '../types';
 import { createUser, getCompanyUsers, getAdminResults, getGlobalEmployees, deleteEmployee, createCompany, getCompanies, deleteUser, deleteCompany } from '../services/storageService';
 import { Results } from './Results';
-import { UserPlus, BarChart, Users, LogOut, Layout, Trash2, Database, Building } from 'lucide-react';
+import { UserPlus, BarChart, Users, LogOut, Layout, Trash2, Database, Building, Loader2 } from 'lucide-react';
 
 interface Props {
   user: User;
@@ -12,21 +12,19 @@ interface Props {
 
 export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'matrix' | 'employees' | 'companies'>('matrix');
+  const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [allEmployees, setAllEmployees] = useState<EmployeeProfile[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   
-  // New User Form State
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [selectedUserCompanyId, setSelectedUserCompanyId] = useState('');
   const [msg, setMsg] = useState('');
 
-  // New Company Form State
   const [newCompanyName, setNewCompanyName] = useState('');
 
-  // Matrix Filter State
   const [selectedManagerId, setSelectedManagerId] = useState<string>('');
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('');
   const [results, setResults] = useState<any[]>([]);
@@ -35,30 +33,40 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
     loadData();
   }, [activeTab, selectedManagerId, selectedCompanyFilter]);
 
-  const loadData = () => {
-    const allUsers = getCompanyUsers(user); // Actually returns all managers for admin
-    const allCompanies = getCompanies();
-    setUsers(allUsers);
-    setCompanies(allCompanies);
-    
-    // Set default company for user creation if not set
-    if (!selectedUserCompanyId && allCompanies.length > 0) {
-        setSelectedUserCompanyId(allCompanies[0].id);
-    }
-    
-    if (activeTab === 'matrix') {
-        const res = getAdminResults(user, selectedManagerId || undefined, selectedCompanyFilter || undefined);
-        setResults(res);
-    }
-    
-    if (activeTab === 'employees') {
-        setAllEmployees(getGlobalEmployees(user));
+  const loadData = async () => {
+    setLoading(true);
+    try {
+        const [allUsers, allCompanies] = await Promise.all([
+            getCompanyUsers(user),
+            getCompanies()
+        ]);
+        
+        setUsers(allUsers);
+        setCompanies(allCompanies);
+        
+        if (!selectedUserCompanyId && allCompanies.length > 0) {
+            setSelectedUserCompanyId(allCompanies[0].id);
+        }
+        
+        if (activeTab === 'matrix') {
+            const res = await getAdminResults(user, selectedManagerId || undefined, selectedCompanyFilter || undefined);
+            setResults(res);
+        }
+        
+        if (activeTab === 'employees') {
+            setAllEmployees(await getGlobalEmployees(user));
+        }
+    } catch (e) {
+        console.error("Error loading data", e);
+    } finally {
+        setLoading(false);
     }
   };
 
-  const handleCreateUser = (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = createUser(user, { 
+    setLoading(true);
+    const success = await createUser(user, { 
         name: newName, 
         email: newEmail, 
         password: newPassword,
@@ -67,48 +75,56 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
     if (success) {
         setMsg('Пользователь создан успешно!');
         setNewName(''); setNewEmail(''); setNewPassword('');
-        loadData();
+        await loadData();
     } else {
         setMsg('Ошибка: Email уже занят или неверные данные.');
     }
+    setLoading(false);
     setTimeout(() => setMsg(''), 3000);
   };
 
-  const handleCreateCompany = (e: React.FormEvent) => {
+  const handleCreateCompany = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!newCompanyName.trim()) return;
-      createCompany(newCompanyName);
+      setLoading(true);
+      await createCompany(newCompanyName);
       setNewCompanyName('');
-      loadData();
+      await loadData();
+      setLoading(false);
   };
 
-  const handleDeleteEmployee = (e: React.MouseEvent, empId: string) => {
+  const handleDeleteEmployee = async (e: React.MouseEvent, empId: string) => {
       e.stopPropagation();
-      if (confirm('Вы уверены? Это удалит сотрудника и ВСЕ результаты его оценок у всех менеджеров.')) {
-          deleteEmployee(user, empId);
-          loadData();
+      if (confirm('Вы уверены? Это удалит сотрудника и ВСЕ результаты его оценок.')) {
+          setLoading(true);
+          await deleteEmployee(user, empId);
+          await loadData();
+          setLoading(false);
       }
   };
 
-  const handleDeleteUser = (e: React.MouseEvent, userId: string) => {
+  const handleDeleteUser = async (e: React.MouseEvent, userId: string) => {
       e.stopPropagation();
-      if (confirm('Вы уверены? Это удалит пользователя, его доступ, его личную карточку сотрудника и все оценки, которые он сделал.')) {
-          deleteUser(user, userId);
-          loadData();
+      if (confirm('Вы уверены? Это удалит пользователя и все связанные данные.')) {
+          setLoading(true);
+          await deleteUser(user, userId);
+          await loadData();
+          setLoading(false);
       }
   };
 
-  const handleDeleteCompany = (e: React.MouseEvent, companyId: string) => {
+  const handleDeleteCompany = async (e: React.MouseEvent, companyId: string) => {
       e.stopPropagation();
-      if (confirm('ВНИМАНИЕ: Это удалит компанию и ВСЕХ связанных с ней пользователей, сотрудников и оценки. Это действие необратимо.')) {
-          deleteCompany(user, companyId);
-          loadData();
+      if (confirm('ВНИМАНИЕ: Это удалит компанию и ВСЕХ связанных с ней пользователей и сотрудников.')) {
+          setLoading(true);
+          await deleteCompany(user, companyId);
+          await loadData();
+          setLoading(false);
       }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Admin Header */}
       <header className="bg-gray-900 text-white p-4 shadow-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -125,40 +141,27 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
       </header>
 
       <div className="max-w-6xl mx-auto p-4 md:p-6">
-        {/* Navigation */}
         <div className="flex gap-2 mb-6 bg-white p-1 rounded-xl shadow-sm border border-gray-100 w-fit overflow-x-auto max-w-full">
-            <button
-                onClick={() => setActiveTab('matrix')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap
-                    ${activeTab === 'matrix' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-50'}`}
-            >
-                <BarChart size={18} /> Общая матрица
-            </button>
-            <button
-                onClick={() => setActiveTab('companies')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap
-                    ${activeTab === 'companies' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-50'}`}
-            >
-                <Building size={18} /> Компании
-            </button>
-            <button
-                onClick={() => setActiveTab('users')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap
-                    ${activeTab === 'users' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-50'}`}
-            >
-                <UserPlus size={18} /> Менеджеры
-            </button>
-            <button
-                onClick={() => setActiveTab('employees')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap
-                    ${activeTab === 'employees' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-50'}`}
-            >
-                <Database size={18} /> База сотрудников
-            </button>
+            {[
+                { id: 'matrix', label: 'Общая матрица', icon: BarChart },
+                { id: 'companies', label: 'Компании', icon: Building },
+                { id: 'users', label: 'Менеджеры', icon: UserPlus },
+                { id: 'employees', label: 'База сотрудников', icon: Database },
+            ].map(tab => (
+                 <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap
+                        ${activeTab === tab.id ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-50'}`}
+                >
+                    <tab.icon size={18} /> {tab.label}
+                </button>
+            ))}
         </div>
 
-        {/* Content */}
-        {activeTab === 'companies' && (
+        {loading && <div className="text-center py-4"><Loader2 className="animate-spin inline mr-2"/>Обновление...</div>}
+
+        {!loading && activeTab === 'companies' && (
              <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -191,11 +194,9 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                             <div key={c.id} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center group">
                                 <span className="font-bold text-gray-800">{c.name}</span>
                                 <div className="flex items-center gap-2">
-                                     <span className="text-xs text-gray-400">{c.id}</span>
                                      <button 
                                         onClick={(e) => handleDeleteCompany(e, c.id)}
                                         className="text-red-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Удалить компанию"
                                      >
                                          <Trash2 size={16} />
                                      </button>
@@ -207,7 +208,7 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
             </div>
         )}
 
-        {activeTab === 'users' && (
+        {!loading && activeTab === 'users' && (
             <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -281,7 +282,6 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                                         <button 
                                             onClick={(e) => handleDeleteUser(e, u.id)}
                                             className="text-red-300 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
-                                            title="Удалить пользователя"
                                         >
                                             <Trash2 size={16} />
                                         </button>
@@ -294,16 +294,12 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
             </div>
         )}
 
-        {activeTab === 'employees' && (
+        {!loading && activeTab === 'employees' && (
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                  <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                     <Database size={20} className="text-blue-600" />
                     База сотрудников
                 </h2>
-                <p className="text-sm text-gray-500 mb-4">
-                    Здесь находятся все сотрудники.
-                </p>
-
                 <div className="space-y-2">
                     {allEmployees.length === 0 && <p className="text-gray-400 py-4 text-center">Список пуст</p>}
                     {allEmployees.map(emp => {
@@ -318,7 +314,6 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                                 <button 
                                     onClick={(e) => handleDeleteEmployee(e, emp.id)}
                                     className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Удалить сотрудника и результаты"
                                 >
                                     <Trash2 size={18} />
                                 </button>
@@ -329,7 +324,7 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
             </div>
         )}
 
-        {activeTab === 'matrix' && (
+        {!loading && activeTab === 'matrix' && (
             <div className="space-y-6">
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-4">
                      <div className="flex flex-col gap-1">
@@ -362,13 +357,8 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                             }
                         </select>
                     </div>
-                    
-                    <span className="text-sm text-gray-400 ml-auto self-center mt-4 sm:mt-0">
-                        Оценок: {results.length}
-                    </span>
                 </div>
                 
-                {/* Admin view results but with Create Plan capability now unlocked internally */}
                 <Results 
                     employees={results} 
                     onRestart={() => loadData()} 
