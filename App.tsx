@@ -90,6 +90,7 @@ const App: React.FC = () => {
         <header className="bg-white border-b border-gray-100 py-3 px-4 flex justify-between items-center safe-area-top">
             <h1 className="text-sm font-bold text-gray-900 tracking-tight">9Box Matrix</h1>
             <div className="flex items-center gap-3">
+                <span className="text-[10px] text-gray-400 font-mono">v{__APP_VERSION__}</span>
                 <span className="text-xs text-gray-500 hidden sm:inline">{user?.email}</span>
                 <button 
                     onClick={handleLogout}
@@ -146,3 +147,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+declare const __APP_VERSION__: string;

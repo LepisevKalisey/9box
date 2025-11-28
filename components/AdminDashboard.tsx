@@ -132,6 +132,7 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
             <div className="flex items-center gap-2">
                 <Layout className="text-blue-400" />
                 <h1 className="font-bold text-lg">Кабинет Администратора</h1>
+                <span className="text-[10px] text-gray-400 font-mono ml-2">v{__APP_VERSION__}</span>
             </div>
             <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-400 hidden sm:inline">{user.email}</span>
@@ -143,7 +144,7 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
       </header>
 
       <div className="max-w-6xl mx-auto p-4 md:p-6">
-        <div className="flex gap-2 mb-6 bg-white p-1 rounded-xl shadow-sm border border-gray-100 w-fit overflow-x-auto max-w-full">
+        <div className="relative flex gap-2 mb-2 bg-white p-1 rounded-xl shadow-sm border border-gray-100 w-fit overflow-x-auto max-w-full">
             {[
                 { id: 'matrix', label: 'Общая матрица', icon: BarChart },
                 { id: 'companies', label: 'Компании', icon: Building },
@@ -159,7 +160,10 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                     <tab.icon size={18} /> {tab.label}
                 </button>
             ))}
+            <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent pointer-events-none md:hidden"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent pointer-events-none md:hidden"></div>
         </div>
+        <div className="text-[10px] text-gray-400 mb-6 md:hidden">Свайпните вкладки влево/вправо</div>
 
         {(activeTab === 'users' || activeTab === 'employees') && (
             <div className="flex items-center gap-3 mb-4">
@@ -407,7 +411,8 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                 <Results 
                     employees={results} 
                     onRestart={() => loadData()} 
-                    readOnly={true} 
+                    readOnly={true}
+                    adminUser={user}
                 />
             </div>
         )}
@@ -415,3 +420,4 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
     </div>
   );
 };
+declare const __APP_VERSION__: string;

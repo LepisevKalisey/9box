@@ -88,14 +88,7 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
           </button>
         </form>
 
-        <div className="mt-6 text-center bg-blue-50 p-4 rounded-xl">
-            <p className="text-xs text-gray-600 font-semibold mb-1">
-               Демо-доступ администратора:
-            </p>
-            <p className="text-xs text-gray-500 font-mono">
-                admin@mides.kz / 128500
-            </p>
-        </div>
+        
       </div>
     </div>
   );

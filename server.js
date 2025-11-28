@@ -273,8 +273,19 @@ app.delete('/api/employees/:id', async (req, res) => {
     if (!admin || admin.role !== 'admin') {
         return res.status(403).json({ error: 'Unauthorized' });
     }
+    const employee = db.employees.find(e => e.id === id);
     db.employees = db.employees.filter(e => e.id !== id);
     db.assessments = db.assessments.filter(a => a.employeeId !== id);
+    if (employee?.linkedUserId) {
+        const linkedUserId = employee.linkedUserId;
+        db.users = db.users.filter(u => u.id !== linkedUserId);
+        db.assessments = db.assessments.filter(a => a.userId !== linkedUserId);
+        const linkedEmp = db.employees.find(e => e.linkedUserId === linkedUserId);
+        if (linkedEmp) {
+            db.assessments = db.assessments.filter(a => a.employeeId !== linkedEmp.id);
+            db.employees = db.employees.filter(e => e.id !== linkedEmp.id);
+        }
+    }
     await writeDB(db);
     res.json({ success: true });
 });

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { EmployeeProfile, User } from '../types';
 import { getAvailableEmployees, createEmployee, getCompanies } from '../services/storageService';
-import { Plus, Search, ChevronRight, Loader2 } from 'lucide-react';
+import { Plus, ChevronRight, Loader2 } from 'lucide-react';
 
 interface Props {
   user: User;
