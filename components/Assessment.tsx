@@ -30,6 +30,27 @@ export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack }) =>
   }, []);
 
   const currentQuestion = questions[currentQIndex];
+  if (!currentQuestion) {
+    return (
+      <div className="max-w-md mx-auto min-h-screen flex flex-col font-sans pb-10">
+        <div className="pt-4 pb-2 px-4 bg-gray-50 flex-none sticky top-14 z-20 shadow-sm border-b border-gray-100/50 backdrop-blur-md bg-gray-50/90">
+          <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mb-3">
+            <div className="bg-blue-600 h-full transition-all duration-300 ease-out" style={{ width: `0%` }} />
+          </div>
+          <div className="flex justify-between items-end">
+            <div>
+              <h2 className="text-sm font-bold text-gray-900 leading-none">{employee.name}</h2>
+              <p className="text-xs text-gray-500 mt-1 leading-none">{employee.position}</p>
+            </div>
+            <div className="text-xs font-medium text-gray-400">0 / 0</div>
+          </div>
+        </div>
+        <div className="flex-1 px-4 py-6">
+          <div className="text-center text-gray-500 py-20">Загрузка вопросов...</div>
+        </div>
+      </div>
+    );
+  }
 
   const handleAnswer = (value: number) => {
     const newAnswers = { ...answers, [currentQuestion.id]: value };
