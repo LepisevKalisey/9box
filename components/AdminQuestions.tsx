@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { User } from '../types';
 import type { Question } from '../constants';
-import { getQuestions, createQuestion, updateQuestion, deleteQuestion } from '../services/storageService';
+import { getQuestions, createQuestion, updateQuestion, deleteQuestion, getThresholds, updateThresholds } from '../services/storageService';
 import { Edit2, Plus, Trash2, Save, X, ListChecks } from 'lucide-react';
 
 interface Props {
@@ -14,6 +14,7 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
   const [error, setError] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<Question>>({});
+  const [thresholds, setThresholds] = useState<{ x: { low_max: number, med_max: number }, y: { low_max: number, med_max: number } } | null>(null);
 
   const [newQ, setNewQ] = useState<Partial<Question>>({
     category: 'performance',
@@ -22,9 +23,10 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
     title: '',
     questionText: '',
     options: [
-      { value: 0, label: 'Низкий', description: '', weight: 1 },
-      { value: 1, label: 'Средний', description: '', weight: 2 },
-      { value: 2, label: 'Высокий', description: '', weight: 3 },
+      { value: 0, description: '', weight: 1 },
+      { value: 1, description: '', weight: 2 },
+      { value: 2, description: '', weight: 3 },
+      { value: 3, description: '', weight: 4 },
     ]
   });
 
@@ -35,8 +37,9 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await getQuestions();
+      const [data, th] = await Promise.all([getQuestions(), getThresholds()]);
       setQuestions(data);
+      setThresholds(th);
     } catch (e) {
       setError('Ошибка загрузки вопросов');
     } finally {
@@ -91,18 +94,32 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
 
   const addNew = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newQ.category || !newQ.questionText || !newQ.options || newQ.options.length === 0) return;
+    if (!newQ.category || !newQ.questionText || !newQ.options || newQ.options.length !== 4) return;
     setLoading(true);
     try {
       const created = await createQuestion(user, newQ as any);
       setQuestions(prev => [...prev, created]);
-      setNewQ({ category: 'performance', title: '', questionText: '', options: [
-        { value: 0, label: 'Низкий', description: '' },
-        { value: 1, label: 'Средний', description: '' },
-        { value: 2, label: 'Высокий', description: '' },
+      setNewQ({ category: 'performance', axis: 'x', isCalibration: false, title: '', questionText: '', options: [
+        { value: 0, description: '', weight: 1 },
+        { value: 1, description: '', weight: 2 },
+        { value: 2, description: '', weight: 3 },
+        { value: 3, description: '', weight: 4 },
       ] });
     } catch (e) {
       setError('Ошибка добавления вопроса');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveThresholds = async () => {
+    if (!thresholds) return;
+    setLoading(true);
+    try {
+      const t = await updateThresholds(user, thresholds as any);
+      setThresholds(t);
+    } catch (e) {
+      setError('Ошибка сохранения порогов');
     } finally {
       setLoading(false);
     }
@@ -118,6 +135,34 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="font-bold text-gray-800 mb-3">Пороги уровней</h3>
+          {thresholds && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs font-bold text-gray-500 uppercase mb-1">X (Performance)</div>
+                  <div className="flex items-center gap-2">
+                    <input className="w-24 px-3 py-2 rounded-lg border border-gray-200" type="number" value={thresholds.x.low_max}
+                      onChange={e => setThresholds({ ...thresholds, x: { ...thresholds.x, low_max: Number(e.target.value) } })} placeholder="low_max" />
+                    <input className="w-24 px-3 py-2 rounded-lg border border-gray-200" type="number" value={thresholds.x.med_max}
+                      onChange={e => setThresholds({ ...thresholds, x: { ...thresholds.x, med_max: Number(e.target.value) } })} placeholder="med_max" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-gray-500 uppercase mb-1">Y (Potential)</div>
+                  <div className="flex items-center gap-2">
+                    <input className="w-24 px-3 py-2 rounded-lg border border-gray-200" type="number" value={thresholds.y.low_max}
+                      onChange={e => setThresholds({ ...thresholds, y: { ...thresholds.y, low_max: Number(e.target.value) } })} placeholder="low_max" />
+                    <input className="w-24 px-3 py-2 rounded-lg border border-gray-200" type="number" value={thresholds.y.med_max}
+                      onChange={e => setThresholds({ ...thresholds, y: { ...thresholds.y, med_max: Number(e.target.value) } })} placeholder="med_max" />
+                  </div>
+                </div>
+              </div>
+              <button onClick={saveThresholds} className="px-3 py-2 bg-gray-900 text-white rounded-lg font-bold">Сохранить пороги</button>
+            </div>
+          )}
+        </div>
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <h3 className="font-bold text-gray-800 mb-3">Список вопросов</h3>
 
@@ -146,19 +191,30 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
                           placeholder="Текст вопроса"
                         />
                         <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-xs font-bold text-gray-500 uppercase">Ось</label>
+                              <select
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                                value={(draft.axis as any) || 'x'}
+                                onChange={e => setDraft({ ...draft, axis: e.target.value as any })}
+                              >
+                                <option value="x">X (Performance)</option>
+                                <option value="y">Y (Potential)</option>
+                              </select>
+                            </div>
+                            <label className="flex items-center gap-2 text-sm text-gray-700">
+                              <input
+                                type="checkbox"
+                                checked={!!draft.isCalibration}
+                                onChange={e => setDraft({ ...draft, isCalibration: e.target.checked })}
+                              />
+                              Калибровочный вопрос
+                            </label>
+                          </div>
                           {(draft.options || []).map((opt, idx) => (
                             <div key={idx} className="flex items-center gap-2">
                               <span className="text-xs w-16 text-gray-500">{opt.value}</span>
-                              <input
-                                className="flex-1 px-3 py-2 rounded-lg border border-gray-200"
-                                value={opt.label || ''}
-                                onChange={e => {
-                                  const next = [...(draft.options as any)];
-                                  next[idx] = { ...next[idx], label: e.target.value };
-                                  setDraft({ ...draft, options: next });
-                                }}
-                                placeholder="Метка"
-                              />
                               <input
                                 className="flex-1 px-3 py-2 rounded-lg border border-gray-200"
                                 value={opt.description || ''}
@@ -193,9 +249,10 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
                         <div>
                           <div className="font-bold text-gray-900">{q.title || 'Без заголовка'}</div>
                           <div className="text-sm text-gray-700">{q.questionText}</div>
+                          <div className="text-[10px] text-gray-500 mt-1">Ось: {q.axis || (q.category === 'performance' ? 'x' : q.category === 'potential' ? 'y' : '—')} · {q.isCalibration ? 'Калибровка' : 'Стандарт'}</div>
                           <ul className="mt-2 text-xs text-gray-600 list-disc pl-4">
                             {q.options.map(o => (
-                              <li key={o.value}>{o.value}: {o.description}</li>
+                              <li key={o.value}>{o.value}: {o.description} (вес: {typeof o.weight === 'number' ? o.weight : '—'})</li>
                             ))}
                           </ul>
                         </div>
@@ -246,7 +303,26 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
                 <input
                   type="checkbox"
                   checked={!!newQ.isCalibration}
-                  onChange={e => setNewQ({ ...newQ, isCalibration: e.target.checked })}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setNewQ({
+                      ...newQ,
+                      isCalibration: checked,
+                      options: checked
+                        ? [
+                            { value: 0, description: '', weight: -4 },
+                            { value: 1, description: '', weight: -2 },
+                            { value: 2, description: '', weight: 0 },
+                            { value: 3, description: '', weight: 2 },
+                          ]
+                        : [
+                            { value: 0, description: '', weight: 1 },
+                            { value: 1, description: '', weight: 2 },
+                            { value: 2, description: '', weight: 3 },
+                            { value: 3, description: '', weight: 4 },
+                          ],
+                    });
+                  }}
                 />
                 Калибровочный вопрос
               </label>
@@ -268,16 +344,6 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
               {(newQ.options || []).map((opt, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <span className="text-xs w-16 text-gray-500">{opt.value}</span>
-                  <input
-                    className="flex-1 px-3 py-2 rounded-lg border border-gray-200"
-                    value={opt.label || ''}
-                    onChange={e => {
-                      const next = [...(newQ.options as any)];
-                      next[idx] = { ...next[idx], label: e.target.value };
-                      setNewQ({ ...newQ, options: next });
-                    }}
-                    placeholder="Метка"
-                  />
                   <input
                     className="flex-1 px-3 py-2 rounded-lg border border-gray-200"
                     value={opt.description || ''}
