@@ -148,6 +148,9 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
                     <input className="w-24 px-3 py-2 rounded-lg border border-gray-200" type="number" value={thresholds.x.med_max}
                       onChange={e => setThresholds({ ...thresholds, x: { ...thresholds.x, med_max: Number(e.target.value) } })} placeholder="med_max" />
                   </div>
+                  {(thresholds.x.low_max >= thresholds.x.med_max) && (
+                    <div className="text-[11px] text-red-600 mt-1">low_max должен быть меньше med_max</div>
+                  )}
                 </div>
                 <div>
                   <div className="text-xs font-bold text-gray-500 uppercase mb-1">Y (Potential)</div>
@@ -157,9 +160,12 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
                     <input className="w-24 px-3 py-2 rounded-lg border border-gray-200" type="number" value={thresholds.y.med_max}
                       onChange={e => setThresholds({ ...thresholds, y: { ...thresholds.y, med_max: Number(e.target.value) } })} placeholder="med_max" />
                   </div>
+                  {(thresholds.y.low_max >= thresholds.y.med_max) && (
+                    <div className="text-[11px] text-red-600 mt-1">low_max должен быть меньше med_max</div>
+                  )}
                 </div>
               </div>
-              <button onClick={saveThresholds} className="px-3 py-2 bg-gray-900 text-white rounded-lg font-bold">Сохранить пороги</button>
+              <button onClick={saveThresholds} disabled={thresholds.x.low_max >= thresholds.x.med_max || thresholds.y.low_max >= thresholds.y.med_max} className="px-3 py-2 bg-gray-900 text-white rounded-lg font-bold disabled:opacity-50">Сохранить пороги</button>
             </div>
           )}
         </div>

@@ -211,111 +211,141 @@ const ensureQuestions = async () => {
                 {
                     id: 'perf_quality',
                     category: 'performance',
+                    axis: 'x',
+                    isCalibration: false,
                     title: '1. Качество результата (Zero Defect)',
                     questionText: 'Как часто вам приходится вмешиваться в работу сотрудника, чтобы исправить ошибки или докрутить результат до нужного уровня?',
                     options: [
-                        { value: 0, label: 'Низкий', description: 'Часто. Я регулярно перепроверяю за ним ключевые этапы.' },
-                        { value: 1, label: 'Средний', description: 'Иногда. В сложных задачах нужен мой контроль, в типовых — справляется сам.' },
-                        { value: 2, label: 'Высокий', description: 'Почти никогда. Я полностью доверяю его результату («сделал и забыл»).' }
+                        { value: 0, description: 'Часто. Я регулярно перепроверяю за ним ключевые этапы.', weight: 1 },
+                        { value: 1, description: 'Иногда. В сложных задачах нужен мой контроль, в типовых — справляется сам.', weight: 2 },
+                        { value: 2, description: 'Почти никогда. Я полностью доверяю его результату («сделал и забыл»).', weight: 3 },
+                        { value: 3, description: 'Выше стандарта, выдаёт эталонный результат.', weight: 4 }
                     ]
                 },
                 {
                     id: 'perf_autonomy',
                     category: 'performance',
+                    axis: 'x',
+                    isCalibration: false,
                     title: '2. Стабильность и автономность',
                     questionText: 'Как сотрудник действует в ситуациях неопределенности или отсутствия четких инструкций?',
                     options: [
-                        { value: 0, label: 'Низкий', description: 'Останавливается и ждет указаний / впадает в ступор.' },
-                        { value: 1, label: 'Средний', description: 'Пытается решить, но часто требует валидации решения у меня.' },
-                        { value: 2, label: 'Высокий', description: 'Самостоятельно находит решение, предлагает варианты и продолжает движение к цели.' }
+                        { value: 0, description: 'Останавливается и ждет указаний / впадает в ступор.', weight: 1 },
+                        { value: 1, description: 'Пытается решить, но часто требует валидации решения у меня.', weight: 2 },
+                        { value: 2, description: 'Самостоятельно находит решение, предлагает варианты и продолжает движение к цели.', weight: 3 },
+                        { value: 3, description: 'Системно действует автономно в сложной неопределённости.', weight: 4 }
                     ]
                 },
                 {
                     id: 'perf_efficiency',
                     category: 'performance',
+                    axis: 'x',
+                    isCalibration: false,
                     title: '3. Эффективность (Volume vs Resources)',
                     questionText: 'Если сравнить этого сотрудника с идеальным профилем роли, какова его отдача?',
                     options: [
-                        { value: 0, label: 'Низкий', description: 'Тратит больше времени/ресурсов на задачу, чем это разумно необходимо.' },
-                        { value: 1, label: 'Средний', description: 'Выдает стабильный результат в рамках нормативов.' },
-                        { value: 2, label: 'Высокий', description: 'Регулярно делает больше или быстрее, чем ожидается, находя способы оптимизации.' }
+                        { value: 0, description: 'Тратит больше времени/ресурсов на задачу, чем это разумно необходимо.', weight: 1 },
+                        { value: 1, description: 'Выдает стабильный результат в рамках нормативов.', weight: 2 },
+                        { value: 2, description: 'Регулярно делает больше или быстрее, чем ожидается, находя способы оптимизации.', weight: 3 },
+                        { value: 3, description: 'Значительно превосходит ожидания с устойчивой эффективностью.', weight: 4 }
                     ]
                 },
                 {
                     id: 'pot_agility',
                     category: 'potential',
+                    axis: 'y',
+                    isCalibration: false,
                     title: '1. Learning Agility (Обучаемость)',
                     questionText: 'Вспомните последний случай, когда сотруднику пришлось освоить совершенно новый навык или инструмент. Что произошло?',
                     options: [
-                        { value: 0, label: 'Низкий', description: 'Сопротивлялся новому или осваивал с большим трудом и медленно.' },
-                        { value: 1, label: 'Средний', description: 'Освоил в рабочем режиме, как и все остальные.' },
-                        { value: 2, label: 'Высокий', description: 'Освоил быстрее других и начал учить этому коллег / внедрять улучшения на базе нового.' }
+                        { value: 0, description: 'Сопротивлялся новому или осваивал с большим трудом и медленно.', weight: 1 },
+                        { value: 1, description: 'Освоил в рабочем режиме, как и все остальные.', weight: 2 },
+                        { value: 2, description: 'Освоил быстрее других и начал учить этому коллег / внедрять улучшения на базе нового.', weight: 3 },
+                        { value: 3, description: 'Мгновенно осваивает и тиражирует улучшения.', weight: 4 }
                     ]
                 },
                 {
                     id: 'pot_scale',
                     category: 'potential',
+                    axis: 'y',
+                    isCalibration: false,
                     title: '2. Масштаб мышления (Helicopter View)',
                     questionText: 'Когда сотрудник сталкивается с проблемой, какой уровень решения он предлагает?',
                     options: [
-                        { value: 0, label: 'Низкий', description: '«Затыкает дыру» (лечит симптом, а не проблему).' },
-                        { value: 1, label: 'Средний', description: 'Решает проблему в рамках своей зоны ответственности.' },
-                        { value: 2, label: 'Высокий', description: 'Видит корневую причину, предлагает системное решение, учитывая влияние на смежные отделы/бизнес.' }
+                        { value: 0, description: '«Затыкает дыру» (лечит симптом, а не проблему).', weight: 1 },
+                        { value: 1, description: 'Решает проблему в рамках своей зоны ответственности.', weight: 2 },
+                        { value: 2, description: 'Видит корневую причину, предлагает системное решение, учитывая влияние на смежные отделы/бизнес.', weight: 3 },
+                        { value: 3, description: 'Формирует системные решения с широким охватом.', weight: 4 }
                     ]
                 },
                 {
                     id: 'pot_drive',
                     category: 'potential',
+                    axis: 'y',
+                    isCalibration: false,
                     title: '3. Амбиции и Драйв',
                     questionText: 'Как сотрудник реагирует на "ничейные" задачи или сложные проблемы, выходящие за рамки его прямых обязанностей?',
                     options: [
-                        { value: 0, label: 'Низкий', description: '«Это не моя работа» / игнорирует.' },
-                        { value: 1, label: 'Средний', description: 'Берется, если попросит руководитель.' },
-                        { value: 2, label: 'Высокий', description: 'Сам замечает проблему, проявляет инициативу и берет на себя ответственность за ее решение без напоминаний.' }
+                        { value: 0, description: '«Это не моя работа» / игнорирует.', weight: 1 },
+                        { value: 1, description: 'Берется, если попросит руководитель.', weight: 2 },
+                        { value: 2, description: 'Сам замечает проблему, проявляет инициативу и берет на себя ответственность за ее решение без напоминаний.', weight: 3 },
+                        { value: 3, description: 'Стабильно берёт сложные «ничейные» задачи и тащит.', weight: 4 }
                     ]
                 },
                 {
                     id: 'val_risk',
                     category: 'calibration',
+                    axis: 'x',
+                    isCalibration: true,
                     title: 'А. Тест на незаменимость',
                     questionText: 'Представьте, что этот сотрудник уходит в отпуск на месяц в самый разгар сезона. Как это повлияет на работу отдела?',
                     options: [
-                        { value: 0, label: 'Высокий риск', description: 'Работа встанет или будет хаос.' },
-                        { value: 1, label: 'Средний риск', description: 'Будет тяжело, но справимся.' },
-                        { value: 2, label: 'Низкий риск', description: 'Процессы налажены так, что его отсутствие почти не замедлит команду.' }
+                        { value: 0, description: 'Работа встанет или будет хаос.', weight: -4 },
+                        { value: 1, description: 'Будет тяжело, но справимся.', weight: -2 },
+                        { value: 2, description: 'Есть замедление, но управляемое.', weight: 0 },
+                        { value: 3, description: 'Отсутствие почти не влияет.', weight: 2 }
                     ]
                 },
                 {
                     id: 'val_promo',
                     category: 'calibration',
+                    axis: 'y',
+                    isCalibration: true,
                     title: 'Б. Тест на следующий шаг',
                     questionText: 'Могли бы вы поручить этому сотруднику задачу, которую обычно выполняете вы сами?',
                     options: [
-                        { value: 0, label: 'Нет', description: 'Ему еще рано.' },
-                        { value: 1, label: 'Частично', description: 'С моим присмотром.' },
-                        { value: 2, label: 'Да, абсолютно', description: 'Я уверен, что он справится не хуже меня.' }
+                        { value: 0, description: 'Ему ещё рано.', weight: -4 },
+                        { value: 1, description: 'С моим присмотром.', weight: -2 },
+                        { value: 2, description: 'Справится на уровне.', weight: 0 },
+                        { value: 3, description: 'Справится лучше меня.', weight: 2 }
                     ]
                 },
                 {
                     id: 'val_quit_feel',
                     category: 'calibration',
+                    axis: 'x',
+                    isCalibration: true,
                     title: 'В. Если бы он уволился',
                     questionText: 'Если бы сотрудник уволился завтра, что бы вы почувствовали?',
                     options: [
-                        { value: 0, label: 'С облегчением', description: 'Его уход не вызовет проблем.' },
-                        { value: 1, label: 'Найдем замену без проблем', description: 'Потеря некритична.' },
-                        { value: 2, label: 'Будет проблемой', description: 'Его уход создаст заметные риски.' }
+                        { value: 0, description: 'Его уход не вызовет проблем.', weight: -4 },
+                        { value: 1, description: 'Потеря некритична.', weight: -2 },
+                        { value: 2, description: 'Замечаемый риск.', weight: 0 },
+                        { value: 3, description: 'Существенные риски.', weight: 2 }
                     ]
                 },
                 {
                     id: 'val_retention',
                     category: 'calibration',
+                    axis: 'y',
+                    isCalibration: true,
                     title: 'Г. Если он захочет уйти',
                     questionText: 'Если ключевой сотрудник скажет, что уходит, ваши действия?',
                     options: [
-                        { value: 0, label: 'Пожелаю удачи', description: 'Не буду удерживать.' },
-                        { value: 1, label: 'Постараюсь обсудить', description: 'Попробую предложить компромисс.' },
-                        { value: 2, label: 'Сделаю всё, чтобы удержать', description: 'Готов действовать, чтобы сохранить.' }
+                        { value: 0, description: 'Не буду удерживать.', weight: -4 },
+                        { value: 1, description: 'Попробую предложить компромисс.', weight: -2 },
+                        { value: 2, description: 'Готов удерживать.', weight: 0 },
+                        { value: 3, description: 'Сделаю всё, чтобы удержать.', weight: 2 }
                     ]
                 }
             ];
@@ -345,13 +375,24 @@ app.put('/api/thresholds', async (req, res) => {
     db.settings = db.settings || {};
     db.settings.thresholds = db.settings.thresholds || { x: { low_max: 13, med_max: 20 }, y: { low_max: 13, med_max: 20 } };
     const apply = (axis, src) => {
-        if (!src) return;
+        if (!src) return true;
         const t = db.settings.thresholds[axis];
-        if (typeof src.low_max === 'number') t.low_max = src.low_max;
-        if (typeof src.med_max === 'number') t.med_max = src.med_max;
+        const low = Number(src.low_max);
+        const med = Number(src.med_max);
+        if (!Number.isFinite(low) || !Number.isFinite(med)) {
+            res.status(400).json({ error: `Invalid thresholds for axis ${axis}` });
+            return false;
+        }
+        if (low >= med) {
+            res.status(400).json({ error: `low_max must be less than med_max for axis ${axis}` });
+            return false;
+        }
+        t.low_max = low;
+        t.med_max = med;
+        return true;
     };
-    apply('x', payload?.x);
-    apply('y', payload?.y);
+    if (!apply('x', payload?.x)) return;
+    if (!apply('y', payload?.y)) return;
     await writeDB(db);
     res.json(db.settings.thresholds);
 });
