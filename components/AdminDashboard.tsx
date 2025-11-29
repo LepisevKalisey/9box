@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { User, EmployeeProfile, Company } from '../types';
 import { createUser, getCompanyUsers, getAdminResults, getGlobalEmployees, deleteEmployee, createCompany, getCompanies, deleteUser, deleteCompany, updateCompany, setCompanyDirector } from '../services/storageService';
 import { Results } from './Results';
-import { UserPlus, BarChart, Users, LogOut, Layout, Trash2, Database, Building, Loader2 } from 'lucide-react';
+import { AdminQuestions } from './AdminQuestions';
+import { UserPlus, BarChart, Users, LogOut, Layout, Trash2, Database, Building, Loader2, ListChecks } from 'lucide-react';
 
 interface Props {
   user: User;
@@ -11,7 +12,7 @@ interface Props {
 }
 
 export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'matrix' | 'employees' | 'companies'>('matrix');
+  const [activeTab, setActiveTab] = useState<'users' | 'matrix' | 'employees' | 'companies' | 'questions'>('matrix');
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [allEmployees, setAllEmployees] = useState<EmployeeProfile[]>([]);
@@ -152,8 +153,9 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                 { id: 'companies', label: 'Компании', icon: Building },
                 { id: 'users', label: 'Менеджеры', icon: UserPlus },
                 { id: 'employees', label: 'База сотрудников', icon: Database },
+                { id: 'questions', label: 'Вопросы', icon: ListChecks },
             ].map(tab => (
-                 <button
+                <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap
@@ -446,6 +448,12 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                     readOnly={true}
                     adminUser={user}
                 />
+            </div>
+        )}
+
+        {!loading && activeTab === 'questions' && (
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <AdminQuestions user={user} />
             </div>
         )}
       </div>

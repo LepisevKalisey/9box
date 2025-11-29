@@ -1,4 +1,5 @@
 import { User, EmployeeProfile, Assessment, EmployeeResult, Role, Company } from '../types';
+import type { Question } from '../constants';
 
 // In production (Docker), frontend is served by backend, so we use relative path.
 // In dev, Vite proxy handles the /api redirection.
@@ -188,4 +189,34 @@ export const setCompanyDirector = async (actor: User, companyId: string, userId:
         method: 'POST',
         body: JSON.stringify({ userId })
     });
+};
+
+// Questions
+export const getQuestions = async (): Promise<Question[]> => {
+    try {
+        return await api<Question[]>('/questions');
+    } catch {
+        return [];
+    }
+};
+
+export const createQuestion = async (adminUser: User, question: Omit<Question, 'id'> & { id?: string }): Promise<Question> => {
+    if (adminUser.role !== 'admin') throw new Error('Unauthorized');
+    return api<Question>(`/questions?adminId=${encodeURIComponent(adminUser.id)}`, {
+        method: 'POST',
+        body: JSON.stringify({ question })
+    });
+};
+
+export const updateQuestion = async (adminUser: User, id: string, payload: Partial<Question>): Promise<Question> => {
+    if (adminUser.role !== 'admin') throw new Error('Unauthorized');
+    return api<Question>(`/questions/${id}?adminId=${encodeURIComponent(adminUser.id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+    });
+};
+
+export const deleteQuestion = async (adminUser: User, id: string): Promise<void> => {
+    if (adminUser.role !== 'admin') throw new Error('Unauthorized');
+    await api(`/questions/${id}?adminId=${encodeURIComponent(adminUser.id)}`, { method: 'DELETE' });
 };

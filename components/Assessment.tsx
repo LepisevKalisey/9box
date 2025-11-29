@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { EmployeeProfile, PerformanceLevel, PotentialLevel, Assessment as AssessmentType } from '../types';
-import { ASSESSMENT_QUESTIONS } from '../constants';
+import { ASSESSMENT_QUESTIONS, Question } from '../constants';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
+import { getQuestions } from '../services/storageService';
 
 interface Props {
   employee: EmployeeProfile;
@@ -13,14 +14,26 @@ interface Props {
 export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack }) => {
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [questions, setQuestions] = useState<Question[]>(ASSESSMENT_QUESTIONS);
 
-  const currentQuestion = ASSESSMENT_QUESTIONS[currentQIndex];
+  useEffect(() => {
+    (async () => {
+      try {
+        const q = await getQuestions();
+        if (Array.isArray(q) && q.length > 0) {
+          setQuestions(q);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  const currentQuestion = questions[currentQIndex];
 
   const handleAnswer = (value: number) => {
     const newAnswers = { ...answers, [currentQuestion.id]: value };
     setAnswers(newAnswers);
 
-    const isLastQuestion = currentQIndex === ASSESSMENT_QUESTIONS.length - 1;
+    const isLastQuestion = currentQIndex === questions.length - 1;
 
     // Auto-advance or Finish
     setTimeout(() => {
@@ -76,9 +89,9 @@ export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack }) =>
   };
 
   const calculateScore = (currentAnswers: Record<string, number>, category: 'performance' | 'potential') => {
-    const questions = ASSESSMENT_QUESTIONS.filter(q => q.category === category);
+    const list = questions.filter(q => q.category === category);
     let total = 0;
-    questions.forEach(q => {
+    list.forEach(q => {
       if (currentAnswers[q.id] !== undefined) {
         total += currentAnswers[q.id];
       }
@@ -92,8 +105,8 @@ export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack }) =>
     return 2;
   };
 
-  const progressPercent = ((currentQIndex + 1) / ASSESSMENT_QUESTIONS.length) * 100;
-  const currentAnswerValue = answers[currentQuestion.id];
+  const progressPercent = questions.length > 0 ? (((currentQIndex + 1) / questions.length) * 100) : 0;
+  const currentAnswerValue = currentQuestion ? answers[currentQuestion.id] : undefined;
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col font-sans pb-10">
@@ -111,7 +124,7 @@ export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack }) =>
                      <p className="text-xs text-gray-500 mt-1 leading-none">{employee.position}</p>
                 </div>
                 <div className="text-xs font-medium text-gray-400">
-                    {currentQIndex + 1} / {ASSESSMENT_QUESTIONS.length}
+                    {currentQIndex + 1} / {questions.length}
                 </div>
             </div>
         </div>
