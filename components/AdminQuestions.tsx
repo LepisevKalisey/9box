@@ -17,12 +17,14 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
 
   const [newQ, setNewQ] = useState<Partial<Question>>({
     category: 'performance',
+    axis: 'x',
+    isCalibration: false,
     title: '',
     questionText: '',
     options: [
-      { value: 0, label: 'Низкий', description: '' },
-      { value: 1, label: 'Средний', description: '' },
-      { value: 2, label: 'Высокий', description: '' },
+      { value: 0, label: 'Низкий', description: '', weight: 1 },
+      { value: 1, label: 'Средний', description: '', weight: 2 },
+      { value: 2, label: 'Высокий', description: '', weight: 3 },
     ]
   });
 
@@ -167,6 +169,17 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
                                 }}
                                 placeholder="Описание"
                               />
+                              <input
+                                className="w-28 px-3 py-2 rounded-lg border border-gray-200"
+                                type="number"
+                                value={typeof opt.weight === 'number' ? (opt.weight as number) : ''}
+                                onChange={e => {
+                                  const next = [...(draft.options as any)];
+                                  next[idx] = { ...next[idx], weight: Number(e.target.value) };
+                                  setDraft({ ...draft, options: next });
+                                }}
+                                placeholder="Вес"
+                              />
                             </div>
                           ))}
                         </div>
@@ -217,6 +230,27 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
                 <option value="calibration">Калибровка</option>
               </select>
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">Ось</label>
+                <select
+                  value={(newQ.axis as any) || 'x'}
+                  onChange={e => setNewQ({ ...newQ, axis: e.target.value as any })}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                >
+                  <option value="x">X (Performance)</option>
+                  <option value="y">Y (Potential)</option>
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={!!newQ.isCalibration}
+                  onChange={e => setNewQ({ ...newQ, isCalibration: e.target.checked })}
+                />
+                Калибровочный вопрос
+              </label>
+            </div>
             <input
               className="w-full px-3 py-2 rounded-lg border border-gray-200"
               placeholder="Заголовок (необязательно)"
@@ -253,6 +287,17 @@ export const AdminQuestions: React.FC<Props> = ({ user }) => {
                       setNewQ({ ...newQ, options: next });
                     }}
                     placeholder="Описание"
+                  />
+                  <input
+                    className="w-28 px-3 py-2 rounded-lg border border-gray-200"
+                    type="number"
+                    value={typeof opt.weight === 'number' ? (opt.weight as number) : ''}
+                    onChange={e => {
+                      const next = [...(newQ.options as any)];
+                      next[idx] = { ...next[idx], weight: Number(e.target.value) };
+                      setNewQ({ ...newQ, options: next });
+                    }}
+                    placeholder="Вес"
                   />
                 </div>
               ))}

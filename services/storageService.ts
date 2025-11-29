@@ -220,3 +220,19 @@ export const deleteQuestion = async (adminUser: User, id: string): Promise<void>
     if (adminUser.role !== 'admin') throw new Error('Unauthorized');
     await api(`/questions/${id}?adminId=${encodeURIComponent(adminUser.id)}`, { method: 'DELETE' });
 };
+
+// Thresholds
+export interface AxisThresholds { low_max: number; med_max: number }
+export interface Thresholds { x: AxisThresholds; y: AxisThresholds }
+
+export const getThresholds = async (): Promise<Thresholds> => {
+    return api<Thresholds>('/thresholds');
+};
+
+export const updateThresholds = async (adminUser: User, thresholds: Partial<Thresholds>): Promise<Thresholds> => {
+    if (adminUser.role !== 'admin') throw new Error('Unauthorized');
+    return api<Thresholds>(`/thresholds?adminId=${encodeURIComponent(adminUser.id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(thresholds)
+    });
+};

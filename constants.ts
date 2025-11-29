@@ -198,14 +198,17 @@ export const BOX_GUIDE: Record<string, BoxGuide> = {
 };
 
 export interface QuestionOption {
-  value: number; // 0, 1, 2
+  value: number;
   label: string;
   description?: string;
+  weight?: number;
 }
 
 export interface Question {
   id: string;
   category: 'performance' | 'potential' | 'calibration';
+  axis?: 'x' | 'y';
+  isCalibration?: boolean;
   title: string;
   questionText: string;
   options: QuestionOption[];

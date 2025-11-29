@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { EmployeeProfile, PerformanceLevel, PotentialLevel, Assessment as AssessmentType } from '../types';
 import { ASSESSMENT_QUESTIONS, Question } from '../constants';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
-import { getQuestions } from '../services/storageService';
+import { getQuestions, getThresholds } from '../services/storageService';
 
 interface Props {
   employee: EmployeeProfile;
@@ -15,14 +15,16 @@ export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack }) =>
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [questions, setQuestions] = useState<Question[]>(ASSESSMENT_QUESTIONS);
+  const [thresholds, setThresholds] = useState<{ x: { low_max: number, med_max: number }, y: { low_max: number, med_max: number } } | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const q = await getQuestions();
+        const [q, th] = await Promise.all([getQuestions(), getThresholds()]);
         if (Array.isArray(q) && q.length > 0) {
           setQuestions(q);
         }
+        if (th) setThresholds(th);
       } catch {}
     })();
   }, []);
@@ -54,38 +56,46 @@ export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack }) =>
   };
 
   const finishAssessment = (finalAnswers: Record<string, number>) => {
-    let perfScore = calculateScore(finalAnswers, 'performance');
-    let potScore = calculateScore(finalAnswers, 'potential');
-
-    const quitFeel = finalAnswers['val_quit_feel'];
-    const replaceRisk = finalAnswers['val_risk'];
-    const promoReady = finalAnswers['val_promo'];
-
-    if (quitFeel !== undefined && quitFeel <= 1) {
-      perfScore = Math.min(perfScore, 5);
-    } else if (replaceRisk === 2) {
-      perfScore = Math.min(perfScore, 5);
+    if (Object.keys(finalAnswers).length !== questions.length) {
+      return;
     }
+    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+    const getAxis = (q: Question): 'x' | 'y' => q.axis ? q.axis : (q.category === 'performance' ? 'x' : 'y');
+    const getWeight = (q: Question, selected: number): number => {
+      const opt = q.options.find(o => o.value === selected);
+      if (opt && typeof opt.weight === 'number') return opt.weight as number;
+      if (q.isCalibration) {
+        if (selected === 0) return -4; if (selected === 1) return 0; if (selected === 2) return 2;
+        return 0;
+      }
+      if (selected === 0) return 1; if (selected === 1) return 2; if (selected === 2) return 3;
+      return selected;
+    };
 
-    let performanceLevel = mapScoreToLevel(perfScore);
-    let potentialLevel = mapScoreToLevel(potScore);
-
-    if ((quitFeel !== undefined && quitFeel <= 1) || replaceRisk === 2) {
-      performanceLevel = Math.max(0, (performanceLevel as number) - 1) as PerformanceLevel;
-    }
-
-    if (promoReady === 2 && potScore === 4) {
-      potentialLevel = 2 as PotentialLevel;
-    }
-    if (promoReady === 0) {
-      potentialLevel = Math.min(potentialLevel as number, 1) as PotentialLevel;
-    }
-
-    onComplete({
-      performance: performanceLevel,
-      potential: potentialLevel,
-      answers: finalAnswers
+    let xSum = 0, ySum = 0;
+    questions.forEach(q => {
+      const sel = finalAnswers[q.id];
+      const w = getWeight(q, sel);
+      if (getAxis(q) === 'x') xSum += w; else ySum += w;
     });
+
+    // Optional clamp if thresholds exist
+    const [min, max] = [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY];
+    xSum = clamp(xSum, min, max);
+    ySum = clamp(ySum, min, max);
+
+    const toLevel = (axis: 'x'|'y', score: number): PerformanceLevel | PotentialLevel => {
+      const th = thresholds || { x: { low_max: 13, med_max: 20 }, y: { low_max: 13, med_max: 20 } };
+      const t = th[axis];
+      if (score <= t.low_max) return 0 as any;
+      if (score <= t.med_max) return 1 as any;
+      return 2 as any;
+    };
+
+    const performanceLevel = toLevel('x', xSum) as PerformanceLevel;
+    const potentialLevel = toLevel('y', ySum) as PotentialLevel;
+
+    onComplete({ performance: performanceLevel, potential: potentialLevel, answers: finalAnswers });
   };
 
   const calculateScore = (currentAnswers: Record<string, number>, category: 'performance' | 'potential') => {
@@ -93,15 +103,18 @@ export const Assessment: React.FC<Props> = ({ employee, onComplete, onBack }) =>
     let total = 0;
     list.forEach(q => {
       if (currentAnswers[q.id] !== undefined) {
-        total += currentAnswers[q.id];
+        const opt = q.options.find(o => o.value === currentAnswers[q.id]);
+        total += typeof opt?.weight === 'number' ? (opt!.weight as number) : (q.isCalibration ? (currentAnswers[q.id] === 0 ? -4 : currentAnswers[q.id] === 1 ? 0 : 2) : (currentAnswers[q.id] + 1));
       }
     });
     return total;
   };
 
   const mapScoreToLevel = (score: number): 0 | 1 | 2 => {
-    if (score <= 1) return 0;
-    if (score <= 4) return 1;
+    const th = thresholds || { x: { low_max: 13, med_max: 20 }, y: { low_max: 13, med_max: 20 } };
+    // This function is unused in new flow; kept for fallback
+    if (score <= th.x.low_max) return 0;
+    if (score <= th.x.med_max) return 1;
     return 2;
   };
 
