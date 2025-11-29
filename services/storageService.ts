@@ -137,7 +137,7 @@ export const getUserResults = async (user: User): Promise<EmployeeResult[]> => {
     return myAssessments.map(assessment => {
         const profile = employees.find(e => e.id === assessment.employeeId);
         if (!profile) return null;
-        const riskFlag = assessment.performance === 2 && assessment.potential === 2 && assessment.answers?.['val_retention'] === 2;
+        const riskFlag = assessment.performance === 2 && assessment.potential === 2 && assessment.answers?.['val_retention'] === 3;
         return {
           ...profile,
           performance: assessment.performance,
@@ -160,22 +160,54 @@ export const getAdminResults = async (admin: User, filterUserId?: string, filter
         filterCompanyId ? api<EmployeeProfile[]>(`/employees?companyId=${encodeURIComponent(filterCompanyId)}`) : api<EmployeeProfile[]>('/employees')
     ]);
 
-    return filteredAssessments.map(assessment => {
-        const profile = employees.find(e => e.id === assessment.employeeId);
-        if (!profile) return null;
-        const riskFlag = assessment.performance === 2 && assessment.potential === 2 && assessment.answers?.['val_retention'] === 2;
-        return {
-          ...profile,
-          performance: assessment.performance,
-          potential: assessment.potential,
-          answers: assessment.answers,
-          aiAdvice: assessment.aiAdvice,
-          date: assessment.date,
-          assessmentId: assessment.id,
-          assessedByUserId: assessment.userId,
-          riskFlag
-        };
-      }).filter(Boolean) as EmployeeResult[];
+    if (filterUserId) {
+      return filteredAssessments.map(assessment => {
+          const profile = employees.find(e => e.id === assessment.employeeId);
+          if (!profile) return null;
+          const riskFlag = assessment.performance === 2 && assessment.potential === 2 && assessment.answers?.['val_retention'] === 3;
+          return {
+            ...profile,
+            performance: assessment.performance,
+            potential: assessment.potential,
+            answers: assessment.answers,
+            aiAdvice: assessment.aiAdvice,
+            date: assessment.date,
+            assessmentId: assessment.id,
+            assessedByUserId: assessment.userId,
+            riskFlag
+          };
+        }).filter(Boolean) as EmployeeResult[];
+    }
+
+    const byEmp = new Map<string, { perfSum: number; potSum: number; count: number; latest?: Assessment; anyRetentionHigh: boolean }>();
+    filteredAssessments.forEach(a => {
+      const agg = byEmp.get(a.employeeId) || { perfSum: 0, potSum: 0, count: 0, latest: undefined, anyRetentionHigh: false };
+      agg.perfSum += Number(a.performance);
+      agg.potSum += Number(a.potential);
+      agg.count += 1;
+      agg.latest = !agg.latest || new Date(a.date).getTime() > new Date(agg.latest.date).getTime() ? a : agg.latest;
+      const retentionVal = a.answers?.['val_retention'];
+      if (retentionVal === 3) agg.anyRetentionHigh = true;
+      byEmp.set(a.employeeId, agg);
+    });
+
+    const results: EmployeeResult[] = [];
+    for (const [employeeId, agg] of byEmp.entries()) {
+      const profile = employees.find(e => e.id === employeeId);
+      if (!profile) continue;
+      const perfAvg = Math.round(agg.perfSum / agg.count);
+      const potAvg = Math.round(agg.potSum / agg.count);
+      const riskFlag = perfAvg === 2 && potAvg === 2 && agg.anyRetentionHigh;
+      results.push({
+        ...profile,
+        performance: perfAvg as any,
+        potential: potAvg as any,
+        date: agg.latest?.date,
+        riskFlag,
+        assessmentCount: agg.count
+      });
+    }
+    return results;
 };
 
 export const deleteAssessment = async (admin: User, assessmentId: string): Promise<void> => {

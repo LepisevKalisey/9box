@@ -70,6 +70,7 @@ export interface EmployeeResult extends EmployeeProfile {
   assessmentId?: string;
   assessedByUserId?: string;
   riskFlag?: boolean;
+  assessmentCount?: number;
 }
 
 export type AppStep = 'login' | 'admin_dashboard' | 'director_dashboard' | 'select_employee' | 'assess' | 'assessment_complete' | 'results';

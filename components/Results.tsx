@@ -79,6 +79,9 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
                                                 <span className="truncate font-medium text-gray-900 flex items-center gap-1">
                                                   {emp.riskFlag && <AlertTriangle size={12} className="text-red-500" />}
                                                   {emp.name}
+                                                  {typeof emp.assessmentCount === 'number' && (
+                                                    <span className="ml-1 text-[10px] text-gray-600 bg-white/70 px-1 rounded">{emp.assessmentCount}</span>
+                                                  )}
                                                 </span>
                                             </button>
                                         ))}
@@ -128,7 +131,12 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
                                 className="w-full text-left p-4 flex justify-between items-center hover:bg-gray-50 transition-colors"
                             >
                                 <div>
-                                    <div className="font-bold text-gray-800">{emp.name}</div>
+                                    <div className="font-bold text-gray-800">
+                                      {emp.name}
+                                      {typeof emp.assessmentCount === 'number' && (
+                                        <span className="ml-1 text-[10px] text-gray-600 bg-gray-100 px-1 rounded">{emp.assessmentCount}</span>
+                                      )}
+                                    </div>
                                     <div className="text-xs text-gray-500">{emp.position}</div>
                                 </div>
                                 <div className="flex items-center gap-2">
