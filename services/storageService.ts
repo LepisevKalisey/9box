@@ -277,3 +277,25 @@ export const updateThresholds = async (adminUser: User, thresholds: Partial<Thre
         body: JSON.stringify(thresholds)
     });
 };
+
+export const getEmployeeAssessments = async (admin: User, employeeId: string): Promise<EmployeeResult[]> => {
+    const [assessments, users] = await Promise.all([
+        api<Assessment[]>(`/assessments?companyId=${encodeURIComponent(admin.companyId)}`),
+        api<User[]>('/users')
+    ]);
+    const userById = new Map(users.map(u => [u.id, u]));
+    return assessments
+        .filter(a => a.employeeId === employeeId)
+        .map(a => ({
+            id: a.employeeId,
+            name: userById.get(a.userId)?.name || '',
+            position: userById.get(a.userId)?.email || '',
+            companyId: admin.companyId,
+            createdByUserId: admin.id,
+            performance: a.performance,
+            potential: a.potential,
+            date: a.date,
+            assessmentId: a.id,
+            assessedByUserId: a.userId
+        }));
+};

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { EmployeeResult, PerformanceLevel, PotentialLevel, User } from '../types';
 import { GET_BOX, BOX_GUIDE } from '../constants';
-import { deleteAssessment } from '../services/storageService';
+import { deleteAssessment, getEmployeeAssessments, getCompanyUsers } from '../services/storageService';
 import { RefreshCw, Sparkles, X, ChevronRight, LayoutGrid, List, UserPlus, AlertTriangle } from 'lucide-react';
 
 interface Props {
@@ -17,6 +17,8 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResult | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [deleting, setDeleting] = useState(false);
+  const [employeeAssessments, setEmployeeAssessments] = useState<EmployeeResult[]>([]);
+  const [assessorNames, setAssessorNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (window.innerWidth < 768) {
@@ -44,6 +46,24 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
       setDeleting(false);
     }
   };
+
+  useEffect(() => {
+    const loadAssessments = async () => {
+      if (!adminUser || !selectedEmployee || !selectedEmployee.id) {
+        setEmployeeAssessments([]);
+        return;
+      }
+      const [list, users] = await Promise.all([
+        getEmployeeAssessments(adminUser, selectedEmployee.id),
+        getCompanyUsers(adminUser)
+      ]);
+      const names: Record<string, string> = {};
+      users.forEach(u => { names[u.id] = u.name; });
+      setAssessorNames(names);
+      setEmployeeAssessments(list);
+    };
+    loadAssessments();
+  }, [adminUser, selectedEmployee]);
 
   // --- Renderers ---
 
@@ -293,6 +313,41 @@ const EmployeeDetailContent: React.FC<{
                         {deleting ? 'Удаление...' : 'Удалить оценку'}
                     </button>
                 </div>
+            )}
+            {readOnly && (
+              <div className="mt-6">
+                <h4 className="font-bold text-gray-800 mb-2">Оценки менеджеров</h4>
+                {employeeAssessments.length === 0 ? (
+                  <div className="text-sm text-gray-500">Нет индивидуальных оценок</div>
+                ) : (
+                  <div className="space-y-2">
+                    {employeeAssessments.map(item => (
+                      <div key={item.assessmentId} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <div className="text-sm text-gray-800">
+                          <div className="font-medium">{assessorNames[item.assessedByUserId!] || item.assessedByUserId}</div>
+                          <div className="text-[11px] text-gray-500">{item.date ? new Date(item.date).toLocaleDateString() : ''}</div>
+                        </div>
+                        {adminUser && item.assessmentId && (
+                          <button
+                            onClick={async () => {
+                              setDeleting(true);
+                              try {
+                                await deleteAssessment(adminUser!, item.assessmentId!);
+                                if (typeof onDeleteAssessment === 'function') onDeleteAssessment();
+                              } finally {
+                                setDeleting(false);
+                              }
+                            }}
+                            className="text-xs bg-red-600 text-white px-3 py-2 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50"
+                          >
+                            Удалить
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
         </div>
     );

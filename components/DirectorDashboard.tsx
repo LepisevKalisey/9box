@@ -18,13 +18,14 @@ export const DirectorDashboard: React.FC<Props> = ({ user, onLogout, onGoAssess 
   const [users, setUsers] = useState<User[]>([])
   const [employees, setEmployees] = useState<EmployeeProfile[]>([])
   const [results, setResults] = useState<any[]>([])
+  const [selectedManagerId, setSelectedManagerId] = useState<string>('')
 
   const [newName, setNewName] = useState('')
   const [newEmail, setNewEmail] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [msg, setMsg] = useState('')
 
-  useEffect(() => { loadData() }, [activeTab])
+  useEffect(() => { loadData() }, [activeTab, selectedManagerId])
 
   const loadData = async () => {
     setLoading(true)
@@ -32,7 +33,7 @@ export const DirectorDashboard: React.FC<Props> = ({ user, onLogout, onGoAssess 
       const companyUsers = await getCompanyUsers(user)
       setUsers(companyUsers.filter(u => u.companyId === user.companyId))
       if (activeTab === 'matrix') {
-        const r = await getAdminResults(user, undefined, user.companyId)
+        const r = await getAdminResults(user, selectedManagerId || undefined, user.companyId)
         setResults(r)
       }
       if (activeTab === 'employees') {
@@ -110,7 +111,27 @@ export const DirectorDashboard: React.FC<Props> = ({ user, onLogout, onGoAssess 
         {loading && <div className="text-center py-4"><Loader2 className="animate-spin inline mr-2"/>Обновление...</div>}
 
         {!loading && activeTab === 'matrix' && (
-          <Results employees={results} onRestart={() => loadData()} readOnly={true} adminUser={user} />
+          <div className="space-y-6">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-bold text-gray-500 uppercase">Менеджер</span>
+                <select
+                  value={selectedManagerId}
+                  onChange={(e) => setSelectedManagerId(e.target.value)}
+                  className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                >
+                  <option value="">Все менеджеры</option>
+                  {users
+                    .filter(u => u.companyId === user.companyId)
+                    .map(u => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            <Results employees={results} onRestart={() => loadData()} readOnly={true} adminUser={user} />
+          </div>
         )}
 
         {!loading && activeTab === 'users' && (
