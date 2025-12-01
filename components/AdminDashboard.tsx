@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, EmployeeProfile, Company } from '../types';
-import { createUser, getCompanyUsers, getAdminResults, getGlobalEmployees, deleteEmployee, createCompany, getCompanies, deleteUser, deleteCompany, updateCompany, setCompanyDirector } from '../services/storageService';
+import { createUser, getCompanyUsers, getAdminResults, getGlobalEmployees, deleteEmployee, createCompany, getCompanies, deleteUser, deleteCompany, updateCompany, setCompanyDirector, convertEmployeeToUser } from '../services/storageService';
 import { Results } from './Results';
 import { AdminQuestions } from './AdminQuestions';
 import { UserPlus, BarChart, Users, LogOut, Layout, Trash2, Database, Building, Loader2, ListChecks } from 'lucide-react';
@@ -397,6 +397,27 @@ export const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                                             className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                         >
                                             Назначить директором
+                                        </button>
+                                    )}
+                                    {!emp.linkedUserId && (
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                const email = prompt('Email пользователя');
+                                                if (!email) return;
+                                                const password = prompt('Пароль');
+                                                if (!password) return;
+                                                setLoading(true);
+                                                try {
+                                                    await convertEmployeeToUser(user, emp.id, email, password);
+                                                    await loadData();
+                                                } finally {
+                                                    setLoading(false);
+                                                }
+                                            }}
+                                            className="px-3 py-1 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                                        >
+                                            Конвертировать в пользователя
                                         </button>
                                     )}
                                 </div>

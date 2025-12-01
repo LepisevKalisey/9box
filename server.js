@@ -659,6 +659,48 @@ app.delete('/api/employees/:id', async (req, res) => {
     res.json({ success: true });
 });
 
+// Convert existing employee into a user account
+app.post('/api/employees/:id/convert', async (req, res) => {
+    const { id } = req.params;
+    const { adminId, directorId } = req.query;
+    const { email, password } = req.body;
+    const db = await readDB();
+    const admin = db.users.find(u => u.id === adminId);
+    const director = db.users.find(u => u.id === directorId);
+    const actor = admin || director;
+    if (!actor || (actor.role !== 'admin' && actor.role !== 'director')) {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const employee = db.employees.find(e => e.id === id);
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+    if (actor.role === 'director' && employee.companyId !== actor.companyId) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+    if (employee.linkedUserId) {
+        return res.status(400).json({ error: 'Employee already linked to a user' });
+    }
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+    }
+    if (db.users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
+        return res.status(400).json({ error: 'User with this email already exists' });
+    }
+    const userId = crypto.randomUUID();
+    const newUser = {
+        id: userId,
+        email: String(email),
+        name: employee.name,
+        password: String(password),
+        role: 'manager',
+        companyId: employee.companyId
+    };
+    db.users.push(newUser);
+    // Link existing employee to the new user
+    employee.linkedUserId = userId;
+    await writeDB(db);
+    res.json({ success: true, user: newUser, employee });
+});
+
 // --- Assessments ---
 
 app.get('/api/assessments', async (req, res) => {

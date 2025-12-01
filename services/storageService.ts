@@ -121,6 +121,15 @@ export const deleteEmployee = async (actor: User, employeeId: string): Promise<v
     await api(`/employees/${employeeId}?${queryRole}=${encodeURIComponent(actor.id)}`, { method: 'DELETE' });
 };
 
+export const convertEmployeeToUser = async (actor: User, employeeId: string, email: string, password: string): Promise<User> => {
+    const queryRole = actor.role === 'admin' ? 'adminId' : 'directorId';
+    const res = await api<{ success: boolean, user: User }>(`/employees/${employeeId}/convert?${queryRole}=${encodeURIComponent(actor.id)}`, {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+    });
+    return res.user;
+};
+
 export const saveAssessment = async (user: User, employeeId: string, result: Omit<Assessment, 'id' | 'userId' | 'employeeId' | 'date'>): Promise<void> => {
     await api('/assessments', {
         method: 'POST',

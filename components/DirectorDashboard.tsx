@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { User, EmployeeProfile } from '../types'
 import { Results } from './Results'
-import { getAdminResults, getCompanyUsers, createUser, deleteUser, deleteEmployee } from '../services/storageService'
+import { getAdminResults, getCompanyUsers, createUser, deleteUser, deleteEmployee, convertEmployeeToUser } from '../services/storageService'
 import { BarChart, Users, LogOut, Layout, Database, Trash2, UserPlus, Loader2 } from 'lucide-react'
 
 declare const __APP_VERSION__: string;
@@ -164,9 +164,32 @@ export const DirectorDashboard: React.FC<Props> = ({ user, onLogout, onGoAssess 
                     <div className="font-bold text-gray-900">{emp.name}</div>
                     <div className="text-xs text-gray-500">{emp.position}</div>
                   </div>
-                  <button onClick={(e) => handleDeleteEmployee(e, emp.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                    <Trash2 size={18} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={(e) => handleDeleteEmployee(e, emp.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <Trash2 size={18} />
+                    </button>
+                    {!emp.linkedUserId && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          const email = prompt('Email пользователя')
+                          if (!email) return
+                          const password = prompt('Пароль')
+                          if (!password) return
+                          setLoading(true)
+                          try {
+                            await convertEmployeeToUser(user, emp.id, email, password)
+                            await loadData()
+                          } finally {
+                            setLoading(false)
+                          }
+                        }}
+                        className="px-3 py-1 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                      >
+                        Конвертировать в пользователя
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
