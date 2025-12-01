@@ -362,7 +362,7 @@ const EmployeeDetailContent: React.FC<{
                           <div className="font-medium flex items-center gap-2">
                             <span>{assessorNames[item.assessedByUserId!] || item.assessedByUserId}</span>
                             <span className="text-[10px] text-gray-600 bg-white/70 px-1 rounded">
-                              Эфф: {shortLevel(item.performance as any)} · Пот: {shortLevel(item.potential as any)}
+                              Эфф: {typeof item.rawX === 'number' ? item.rawX : '—'} · Пот: {typeof item.rawY === 'number' ? item.rawY : '—'}
                             </span>
                           </div>
                           <div className="text-[11px] text-gray-500">{item.date ? new Date(item.date).toLocaleDateString() : ''}</div>

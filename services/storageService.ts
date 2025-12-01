@@ -296,6 +296,8 @@ export const getEmployeeAssessments = async (admin: User, employeeId: string): P
             potential: a.potential,
             date: a.date,
             assessmentId: a.id,
-            assessedByUserId: a.userId
+            assessedByUserId: a.userId,
+            rawX: (a as any).rawX,
+            rawY: (a as any).rawY
         }));
 };

@@ -746,7 +746,7 @@ app.get('/api/assessments', async (req, res) => {
         }
         const perf = toLevel('x', xSum);
         const pot = toLevel('y', ySum);
-        return { ...a, performance: perf, potential: pot };
+        return { ...a, performance: perf, potential: pot, rawX: xSum, rawY: ySum };
     });
     res.json(recalculated);
 });
