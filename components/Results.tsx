@@ -5,6 +5,13 @@ import { GET_BOX, BOX_GUIDE } from '../constants';
 import { deleteAssessment, getEmployeeAssessments, getCompanyUsers } from '../services/storageService';
 import { RefreshCw, Sparkles, X, ChevronRight, LayoutGrid, List, UserPlus, AlertTriangle } from 'lucide-react';
 
+const shortLevel = (lvl?: number) => {
+  if (lvl === 0) return 'Н';
+  if (lvl === 1) return 'С';
+  if (lvl === 2) return 'В';
+  return '—';
+};
+
 interface Props {
   employees: EmployeeResult[];
   onRestart: () => void; // Used as refresh or restart
@@ -63,12 +70,6 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
     }
   };
 
-  const shortLevel = (lvl?: number) => {
-    if (lvl === 0) return 'Н';
-    if (lvl === 1) return 'С';
-    if (lvl === 2) return 'В';
-    return '—';
-  };
 
   useEffect(() => {
     const loadAssessments = async () => {
@@ -299,7 +300,9 @@ const EmployeeDetailContent: React.FC<{
     assessorNames?: Record<string, string>;
     onDeleteAssessmentItem?: (assessmentId?: string) => void;
 }> = ({ employee, readOnly, onDeleteAssessment, deleting, assessments = [], assessorNames = {}, onDeleteAssessmentItem }) => {
-    const box = GET_BOX(employee.performance!, employee.potential!);
+    const perf = (employee.performance ?? 0) as PerformanceLevel;
+    const pot = (employee.potential ?? 0) as PotentialLevel;
+    const box = GET_BOX(perf, pot);
     const guide = BOX_GUIDE[box.id];
 
     return (
