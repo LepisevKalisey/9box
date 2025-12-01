@@ -47,6 +47,22 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
     }
   };
 
+  const handleDeleteAssessmentItem = async (assessmentId?: string) => {
+    if (!adminUser || !assessmentId) return;
+    setDeleting(true);
+    try {
+      await deleteAssessment(adminUser, assessmentId);
+      await onRestart();
+      // Reload individual list
+      if (selectedEmployee?.id) {
+        const list = await getEmployeeAssessments(adminUser, selectedEmployee.id);
+        setEmployeeAssessments(list);
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   useEffect(() => {
     const loadAssessments = async () => {
       if (!adminUser || !selectedEmployee || !selectedEmployee.id) {
@@ -221,6 +237,9 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
                    readOnly={readOnly}
                    onDeleteAssessment={handleDeleteAssessment}
                    deleting={deleting}
+                   assessments={employeeAssessments}
+                   assessorNames={assessorNames}
+                   onDeleteAssessmentItem={handleDeleteAssessmentItem}
                  />
              ) : (
                 <div className="text-center text-gray-400 py-20 flex flex-col items-center">
@@ -251,6 +270,9 @@ export const Results: React.FC<Props> = ({ employees, onRestart, onAddMore, read
                         readOnly={readOnly}
                         onDeleteAssessment={handleDeleteAssessment}
                         deleting={deleting}
+                        assessments={employeeAssessments}
+                        assessorNames={assessorNames}
+                        onDeleteAssessmentItem={handleDeleteAssessmentItem}
                      />
                   </div>
               </div>
@@ -266,7 +288,10 @@ const EmployeeDetailContent: React.FC<{
     readOnly?: boolean;
     onDeleteAssessment?: () => void;
     deleting?: boolean;
-}> = ({ employee, readOnly, onDeleteAssessment, deleting }) => {
+    assessments?: EmployeeResult[];
+    assessorNames?: Record<string, string>;
+    onDeleteAssessmentItem?: (assessmentId?: string) => void;
+}> = ({ employee, readOnly, onDeleteAssessment, deleting, assessments = [], assessorNames = {}, onDeleteAssessmentItem }) => {
     const box = GET_BOX(employee.performance!, employee.potential!);
     const guide = BOX_GUIDE[box.id];
 
@@ -317,27 +342,19 @@ const EmployeeDetailContent: React.FC<{
             {readOnly && (
               <div className="mt-6">
                 <h4 className="font-bold text-gray-800 mb-2">Оценки менеджеров</h4>
-                {employeeAssessments.length === 0 ? (
+                {assessments.length === 0 ? (
                   <div className="text-sm text-gray-500">Нет индивидуальных оценок</div>
                 ) : (
                   <div className="space-y-2">
-                    {employeeAssessments.map(item => (
+                    {assessments.map(item => (
                       <div key={item.assessmentId} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
                         <div className="text-sm text-gray-800">
                           <div className="font-medium">{assessorNames[item.assessedByUserId!] || item.assessedByUserId}</div>
                           <div className="text-[11px] text-gray-500">{item.date ? new Date(item.date).toLocaleDateString() : ''}</div>
                         </div>
-                        {adminUser && item.assessmentId && (
+                        {item.assessmentId && (
                           <button
-                            onClick={async () => {
-                              setDeleting(true);
-                              try {
-                                await deleteAssessment(adminUser!, item.assessmentId!);
-                                if (typeof onDeleteAssessment === 'function') onDeleteAssessment();
-                              } finally {
-                                setDeleting(false);
-                              }
-                            }}
+                            onClick={() => onDeleteAssessmentItem && onDeleteAssessmentItem(item.assessmentId!)}
                             className="text-xs bg-red-600 text-white px-3 py-2 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50"
                           >
                             Удалить
