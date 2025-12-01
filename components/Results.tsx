@@ -349,7 +349,12 @@ const EmployeeDetailContent: React.FC<{
                     {assessments.map(item => (
                       <div key={item.assessmentId} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
                         <div className="text-sm text-gray-800">
-                          <div className="font-medium">{assessorNames[item.assessedByUserId!] || item.assessedByUserId}</div>
+                          <div className="font-medium flex items-center gap-2">
+                            <span>{assessorNames[item.assessedByUserId!] || item.assessedByUserId}</span>
+                            <span className="text-[10px] text-gray-600 bg-white/70 px-1 rounded">
+                              Эфф: {item.performance === 0 ? 'Н' : item.performance === 1 ? 'С' : 'В'} · Пот: {item.potential === 0 ? 'Н' : item.potential === 1 ? 'С' : 'В'}
+                            </span>
+                          </div>
                           <div className="text-[11px] text-gray-500">{item.date ? new Date(item.date).toLocaleDateString() : ''}</div>
                         </div>
                         {item.assessmentId && (

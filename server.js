@@ -714,7 +714,41 @@ app.get('/api/assessments', async (req, res) => {
         const companyUserIds = db.users.filter(u => u.companyId === companyId).map(u => u.id);
         list = list.filter(a => companyUserIds.includes(a.userId));
     }
-    res.json(list);
+    const thresholds = (db.settings && db.settings.thresholds) ? db.settings.thresholds : { x: { low_max: 13, med_max: 20 }, y: { low_max: 13, med_max: 20 } };
+    const qIndex = new Map((db.questions || []).map(q => [q.id, q]));
+    const getAxis = (q) => q.axis ? q.axis : (q.category === 'performance' ? 'x' : (q.category === 'potential' ? 'y' : 'x'));
+    const getWeight = (q, value) => {
+        if (!q) return 0;
+        const opt = (q.options || []).find(o => Number(o.value) === Number(value));
+        if (opt && typeof opt.weight === 'number') return Number(opt.weight);
+        if (q.isCalibration) {
+            // default 4-point calibration [-4, -2, 0, +2]
+            if (value === 0) return -4; if (value === 1) return -2; if (value === 2) return 0; if (value === 3) return 2;
+            return 0;
+        }
+        // default 4-point standard [1,2,3,4]
+        if (value === 0) return 1; if (value === 1) return 2; if (value === 2) return 3; if (value === 3) return 4;
+        return 0;
+    };
+    const toLevel = (axis, score) => {
+        const t = thresholds[axis];
+        if (score <= t.low_max) return 0;
+        if (score <= t.med_max) return 1;
+        return 2;
+    };
+    const recalculated = list.map(a => {
+        let xSum = 0, ySum = 0;
+        const answers = a.answers || {};
+        for (const [qid, val] of Object.entries(answers)) {
+            const q = qIndex.get(qid);
+            const w = getWeight(q, Number(val));
+            if (getAxis(q) === 'x') xSum += w; else ySum += w;
+        }
+        const perf = toLevel('x', xSum);
+        const pot = toLevel('y', ySum);
+        return { ...a, performance: perf, potential: pot };
+    });
+    res.json(recalculated);
 });
 
 app.post('/api/assessments', async (req, res) => {
